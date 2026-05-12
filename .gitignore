@@ -32,3 +32,10 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# Non-Android platforms (Android-only project)
+/ios/
+/macos/
+/linux/
+/windows/
+/web/
