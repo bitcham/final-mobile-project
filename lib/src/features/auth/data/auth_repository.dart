@@ -1,10 +1,7 @@
-import 'dart:convert';
-import 'dart:math';
-
-import 'package:crypto/crypto.dart';
 import 'package:sqflite/sqflite.dart';
 
 import 'auth_database_service.dart';
+import 'password_hasher.dart';
 import '../models/app_user.dart';
 
 class EmailAlreadyRegisteredException implements Exception {
@@ -17,10 +14,14 @@ class EmailAlreadyRegisteredException implements Exception {
 }
 
 class AuthRepository {
-  AuthRepository({AuthDatabaseService? databaseService})
-    : _databaseService = databaseService ?? AuthDatabaseService();
+  AuthRepository({
+    AuthDatabaseService? databaseService,
+    PasswordHasher? passwordHasher,
+  }) : _databaseService = databaseService ?? AuthDatabaseService(),
+       _passwordHasher = passwordHasher ?? PasswordHasher();
 
   final AuthDatabaseService _databaseService;
+  final PasswordHasher _passwordHasher;
 
   Future<AppUser> register({
     required String email,
@@ -30,17 +31,12 @@ class AuthRepository {
   }) async {
     final normalizedEmail = email.trim();
 
-    final random = Random.secure();
-    final saltBytes = List<int>.generate(16, (_) => random.nextInt(256));
-    final salt = saltBytes
-        .map((b) => b.toRadixString(16).padLeft(2, '0'))
-        .join();
-    final hash = sha256.convert(utf8.encode(salt + password)).toString();
+    final passwordHash = _passwordHasher.hash(password);
 
     final pending = AppUser(
       email: normalizedEmail,
-      passwordHash: hash,
-      passwordSalt: salt,
+      passwordHash: passwordHash.toStorageString(),
+      passwordSalt: passwordHash.salt,
       realName: realName.trim(),
       profileImagePath: profileImagePath,
     );
@@ -64,14 +60,49 @@ class AuthRepository {
     if (user == null) {
       return null;
     }
-    final attemptedHash = sha256
-        .convert(utf8.encode(user.passwordSalt + password))
-        .toString();
-    if (attemptedHash != user.passwordHash) {
+    final passwordMatches = _passwordHasher.verifyStored(
+      password: password,
+      salt: user.passwordSalt,
+      storedHash: user.passwordHash,
+    );
+    if (!passwordMatches) {
       return null;
     }
     return user;
   }
 
   Future<AppUser?> findById(int id) => _databaseService.findById(id);
+
+  Future<AppUser> updateProfile({
+    required AppUser user,
+    required String realName,
+  }) async {
+    final updated = user.copyWith(realName: realName.trim());
+    await _databaseService.updateUser(updated);
+    return updated;
+  }
+
+  Future<bool> changePassword({
+    required AppUser user,
+    required String currentPassword,
+    required String newPassword,
+  }) async {
+    final passwordMatches = _passwordHasher.verifyStored(
+      password: currentPassword,
+      salt: user.passwordSalt,
+      storedHash: user.passwordHash,
+    );
+    if (!passwordMatches) {
+      return false;
+    }
+
+    final passwordHash = _passwordHasher.hash(newPassword);
+    await _databaseService.updateUser(
+      user.copyWith(
+        passwordHash: passwordHash.toStorageString(),
+        passwordSalt: passwordHash.salt,
+      ),
+    );
+    return true;
+  }
 }

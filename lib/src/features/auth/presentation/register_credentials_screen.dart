@@ -161,7 +161,9 @@ class _RegisterCredentialsScreenState extends State<RegisterCredentialsScreen> {
                             borderRadius: BorderRadius.circular(999),
                             boxShadow: [
                               BoxShadow(
-                                color: CupertinoColors.black.withOpacity(0.15),
+                                color: CupertinoColors.black.withValues(
+                                  alpha: 0.15,
+                                ),
                                 blurRadius: 6,
                                 offset: const Offset(0, 2),
                               ),

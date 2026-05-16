@@ -24,9 +24,8 @@ class Authenticated extends AuthState {
 final authDatabaseServiceProvider = Provider((ref) => AuthDatabaseService());
 
 final authRepositoryProvider = Provider(
-  (ref) => AuthRepository(
-    databaseService: ref.watch(authDatabaseServiceProvider),
-  ),
+  (ref) =>
+      AuthRepository(databaseService: ref.watch(authDatabaseServiceProvider)),
 );
 
 final sessionServiceProvider = Provider((ref) => SessionService());
@@ -56,13 +55,9 @@ class AuthController extends AsyncNotifier<AuthState> {
     return Authenticated(user);
   }
 
-  Future<bool> login({
-    required String email,
-    required String password,
-  }) async {
+  Future<bool> login({required String email, required String password}) async {
     final repo = ref.read(authRepositoryProvider);
     final sessionService = ref.read(sessionServiceProvider);
-    state = const AsyncLoading<AuthState>();
     final user = await repo.login(email: email, password: password);
     if (user == null || user.id == null) {
       state = const AsyncData<AuthState>(Unauthenticated());
@@ -83,17 +78,22 @@ class AuthController extends AsyncNotifier<AuthState> {
   }) async {
     final repo = ref.read(authRepositoryProvider);
     final sessionService = ref.read(sessionServiceProvider);
-    state = const AsyncLoading<AuthState>();
-    final user = await repo.register(
-      email: email,
-      password: password,
-      realName: realName,
-      profileImagePath: profileImagePath,
-    );
-    await sessionService.setCurrentUserId(user.id!);
-    state = AsyncData<AuthState>(Authenticated(user));
-    _bumpRouter();
-    return user;
+    try {
+      final user = await repo.register(
+        email: email,
+        password: password,
+        realName: realName,
+        profileImagePath: profileImagePath,
+      );
+      await sessionService.setCurrentUserId(user.id!);
+      state = AsyncData<AuthState>(Authenticated(user));
+      _bumpRouter();
+      return user;
+    } catch (_) {
+      state = const AsyncData<AuthState>(Unauthenticated());
+      _bumpRouter();
+      rethrow;
+    }
   }
 
   Future<void> logout() async {
@@ -103,11 +103,53 @@ class AuthController extends AsyncNotifier<AuthState> {
     _bumpRouter();
   }
 
+  Future<AppUser> updateProfile({required String realName}) async {
+    final authState = state.value;
+    if (authState is! Authenticated) {
+      throw StateError('A signed-in user is required to update the profile.');
+    }
+
+    final repo = ref.read(authRepositoryProvider);
+    final updated = await repo.updateProfile(
+      user: authState.user,
+      realName: realName,
+    );
+    state = AsyncData<AuthState>(Authenticated(updated));
+    _bumpRouter();
+    return updated;
+  }
+
+  Future<bool> changePassword({
+    required String currentPassword,
+    required String newPassword,
+  }) async {
+    final authState = state.value;
+    if (authState is! Authenticated) {
+      return false;
+    }
+
+    final repo = ref.read(authRepositoryProvider);
+    final changed = await repo.changePassword(
+      user: authState.user,
+      currentPassword: currentPassword,
+      newPassword: newPassword,
+    );
+    if (changed) {
+      final refreshedUser = await repo.findById(authState.user.id!);
+      state = AsyncData<AuthState>(
+        Authenticated(refreshedUser ?? authState.user),
+      );
+      _bumpRouter();
+    }
+    return changed;
+  }
+
   void _bumpRouter() {
     final notifier = ref.read(authRouterRefreshProvider);
     notifier.value = notifier.value + 1;
   }
 }
 
-final authControllerProvider =
-    AsyncNotifierProvider<AuthController, AuthState>(AuthController.new);
+final authControllerProvider = AsyncNotifierProvider<AuthController, AuthState>(
+  AuthController.new,
+);

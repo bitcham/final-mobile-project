@@ -11,6 +11,8 @@ import '../data/auth_providers.dart';
 import '../data/auth_repository.dart';
 import '../data/auth_validators.dart';
 
+enum _ProfileImageAction { camera, gallery, remove }
+
 class RegisterProfileScreen extends ConsumerStatefulWidget {
   const RegisterProfileScreen({super.key, required this.pending});
 
@@ -48,43 +50,54 @@ class _RegisterProfileScreenState extends ConsumerState<RegisterProfileScreen> {
     }
   }
 
-  void _openPicker() {
-    showCupertinoModalPopup<void>(
+  Future<void> _openPicker() async {
+    final action = await showCupertinoDialog<_ProfileImageAction>(
       context: context,
-      builder: (popupContext) {
-        return CupertinoActionSheet(
+      builder: (dialogContext) {
+        return CupertinoAlertDialog(
+          title: const Text('Profile picture'),
           actions: [
-            CupertinoActionSheetAction(
-              onPressed: () {
-                Navigator.of(popupContext).pop();
-                _pickImage(ImageSource.camera);
-              },
+            CupertinoDialogAction(
+              onPressed: () =>
+                  Navigator.of(dialogContext).pop(_ProfileImageAction.camera),
               child: const Text('Take photo'),
             ),
-            CupertinoActionSheetAction(
-              onPressed: () {
-                Navigator.of(popupContext).pop();
-                _pickImage(ImageSource.gallery);
-              },
+            CupertinoDialogAction(
+              onPressed: () =>
+                  Navigator.of(dialogContext).pop(_ProfileImageAction.gallery),
               child: const Text('Choose from gallery'),
             ),
             if (_profileImagePath != null)
-              CupertinoActionSheetAction(
-                onPressed: () {
-                  Navigator.of(popupContext).pop();
-                  setState(() => _profileImagePath = null);
-                },
+              CupertinoDialogAction(
+                onPressed: () =>
+                    Navigator.of(dialogContext).pop(_ProfileImageAction.remove),
                 child: const Text('Use default picture'),
               ),
+            CupertinoDialogAction(
+              isDefaultAction: true,
+              onPressed: () => Navigator.of(dialogContext).pop(),
+              child: const Text('Cancel'),
+            ),
           ],
-          cancelButton: CupertinoActionSheetAction(
-            isDefaultAction: true,
-            onPressed: () => Navigator.of(popupContext).pop(),
-            child: const Text('Cancel'),
-          ),
         );
       },
     );
+
+    if (!mounted || action == null) {
+      return;
+    }
+
+    switch (action) {
+      case _ProfileImageAction.camera:
+        await _pickImage(ImageSource.camera);
+        break;
+      case _ProfileImageAction.gallery:
+        await _pickImage(ImageSource.gallery);
+        break;
+      case _ProfileImageAction.remove:
+        setState(() => _profileImagePath = null);
+        break;
+    }
   }
 
   void _showAlert(String message) {
@@ -150,115 +163,123 @@ class _RegisterProfileScreenState extends ConsumerState<RegisterProfileScreen> {
       ),
       child: SafeArea(
         child: LayoutBuilder(
-          builder: (context, constraints) => SingleChildScrollView(
-            child: ConstrainedBox(
-              constraints: BoxConstraints(minHeight: constraints.maxHeight),
-              child: IntrinsicHeight(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 24,
-                    vertical: 16,
-                  ),
-                  child: Form(
-                    key: _formKey,
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        const Text(
-                          'YOUR PROFILE',
-                          textAlign: TextAlign.center,
-                          style: CinerateText.titleLarge,
-                        ),
-                        const SizedBox(height: 8),
-                        const Text(
-                          'Step 2 of 2 — name & photo',
-                          textAlign: TextAlign.center,
-                          style: CinerateText.bodySmall,
-                        ),
-                        const SizedBox(height: 32),
-                        Center(
-                          child: ProfileAvatar(
-                            imagePath: _profileImagePath,
-                            size: 120,
-                            onTap: _submitting ? null : _openPicker,
-                            showEditBadge: true,
+          builder: (context, constraints) {
+            final compact = constraints.maxHeight < 520;
+            final avatarSize = compact ? 84.0 : 120.0;
+            return SingleChildScrollView(
+              child: ConstrainedBox(
+                constraints: BoxConstraints(minHeight: constraints.maxHeight),
+                child: IntrinsicHeight(
+                  child: Padding(
+                    padding: EdgeInsets.symmetric(
+                      horizontal: 24,
+                      vertical: compact ? 8 : 16,
+                    ),
+                    child: Form(
+                      key: _formKey,
+                      child: Column(
+                        mainAxisAlignment: compact
+                            ? MainAxisAlignment.start
+                            : MainAxisAlignment.center,
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          const Text(
+                            'YOUR PROFILE',
+                            textAlign: TextAlign.center,
+                            style: CinerateText.titleLarge,
                           ),
-                        ),
-                        const SizedBox(height: 12),
-                        Center(
-                          child: CupertinoButton(
+                          const SizedBox(height: 8),
+                          const Text(
+                            'Step 2 of 2 — name & photo',
+                            textAlign: TextAlign.center,
+                            style: CinerateText.bodySmall,
+                          ),
+                          SizedBox(height: compact ? 18 : 32),
+                          Center(
+                            child: ProfileAvatar(
+                              imagePath: _profileImagePath,
+                              size: avatarSize,
+                              onTap: _submitting ? null : _openPicker,
+                              showEditBadge: true,
+                            ),
+                          ),
+                          SizedBox(height: compact ? 8 : 12),
+                          Center(
+                            child: CupertinoButton(
+                              padding: EdgeInsets.zero,
+                              onPressed: _submitting ? null : _openPicker,
+                              child: Text(
+                                _profileImagePath == null
+                                    ? 'Add a profile picture (optional)'
+                                    : 'Change profile picture',
+                                style: const TextStyle(
+                                  fontFamily: 'Inter',
+                                  fontWeight: FontWeight.bold,
+                                  color: CinerateColors.primary,
+                                ),
+                              ),
+                            ),
+                          ),
+                          SizedBox(height: compact ? 12 : 24),
+                          CupertinoTextFormFieldRow(
+                            controller: _nameController,
+                            placeholder: 'real name',
+                            textCapitalization: TextCapitalization.words,
+                            textInputAction: TextInputAction.done,
                             padding: EdgeInsets.zero,
-                            onPressed: _submitting ? null : _openPicker,
-                            child: Text(
-                              _profileImagePath == null
-                                  ? 'Add a profile picture (optional)'
-                                  : 'Change profile picture',
-                              style: const TextStyle(
-                                fontFamily: 'Inter',
-                                fontWeight: FontWeight.bold,
-                                color: CinerateColors.primary,
+                            decoration: BoxDecoration(
+                              color: CinerateColors.inputBackground,
+                              borderRadius: BorderRadius.circular(999),
+                              border: Border.all(
+                                color: CinerateColors.tagBackground,
+                                width: 2,
                               ),
                             ),
-                          ),
-                        ),
-                        const SizedBox(height: 24),
-                        CupertinoTextFormFieldRow(
-                          controller: _nameController,
-                          placeholder: 'real name',
-                          textCapitalization: TextCapitalization.words,
-                          textInputAction: TextInputAction.done,
-                          padding: EdgeInsets.zero,
-                          decoration: BoxDecoration(
-                            color: CinerateColors.inputBackground,
-                            borderRadius: BorderRadius.circular(999),
-                            border: Border.all(
-                              color: CinerateColors.tagBackground,
-                              width: 2,
+                            style: const TextStyle(
+                              fontFamily: 'Inter',
+                              color: CinerateColors.textPrimary,
                             ),
+                            validator: validateRealName,
+                            onFieldSubmitted: (_) => _submit(),
                           ),
-                          style: const TextStyle(
-                            fontFamily: 'Inter',
-                            color: CinerateColors.textPrimary,
-                          ),
-                          validator: validateRealName,
-                          onFieldSubmitted: (_) => _submit(),
-                        ),
-                        const SizedBox(height: 28),
-                        Container(
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(999),
-                            boxShadow: [
-                              BoxShadow(
-                                color: CupertinoColors.black.withOpacity(0.15),
-                                blurRadius: 6,
-                                offset: const Offset(0, 2),
-                              ),
-                            ],
-                          ),
-                          child: CupertinoButton.filled(
-                            onPressed: _submitting ? null : _submit,
-                            child: _submitting
-                                ? const CupertinoActivityIndicator(
-                                    color: CinerateColors.textPrimary,
-                                  )
-                                : const Text(
-                                    'FINISH',
-                                    style: TextStyle(
-                                      fontFamily: 'Inter',
-                                      fontWeight: FontWeight.bold,
-                                      letterSpacing: 1.2,
-                                    ),
+                          SizedBox(height: compact ? 14 : 28),
+                          Container(
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(999),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: CupertinoColors.black.withValues(
+                                    alpha: 0.15,
                                   ),
+                                  blurRadius: 6,
+                                  offset: const Offset(0, 2),
+                                ),
+                              ],
+                            ),
+                            child: CupertinoButton.filled(
+                              onPressed: _submitting ? null : _submit,
+                              child: _submitting
+                                  ? const CupertinoActivityIndicator(
+                                      color: CinerateColors.textPrimary,
+                                    )
+                                  : const Text(
+                                      'FINISH',
+                                      style: TextStyle(
+                                        fontFamily: 'Inter',
+                                        fontWeight: FontWeight.bold,
+                                        letterSpacing: 1.2,
+                                      ),
+                                    ),
+                            ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                   ),
                 ),
               ),
-            ),
-          ),
+            );
+          },
         ),
       ),
     );

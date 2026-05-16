@@ -1,11 +1,13 @@
+import 'package:flutter/foundation.dart';
 import 'package:path/path.dart' as p;
-import 'package:path_provider/path_provider.dart';
 import 'package:sqflite/sqflite.dart';
+import 'package:sqflite_common_ffi_web/sqflite_ffi_web.dart';
 
 import '../models/app_user.dart';
 
 class AuthDatabaseService {
   static const String _table = 'users';
+  static bool _webFactoryConfigured = false;
 
   Database? _database;
 
@@ -14,8 +16,7 @@ class AuthDatabaseService {
       return _database!;
     }
 
-    final directory = await getApplicationDocumentsDirectory();
-    final path = p.join(directory.path, 'cinerate_auth.db');
+    final path = await _databasePath();
     _database = await openDatabase(
       path,
       version: 1,
@@ -33,6 +34,19 @@ class AuthDatabaseService {
       },
     );
     return _database!;
+  }
+
+  Future<String> _databasePath() async {
+    if (kIsWeb) {
+      if (!_webFactoryConfigured) {
+        databaseFactory = databaseFactoryFfiWeb;
+        _webFactoryConfigured = true;
+      }
+      return 'cinerate_auth.db';
+    }
+
+    final databaseDirectory = await getDatabasesPath();
+    return p.join(databaseDirectory, 'cinerate_auth.db');
   }
 
   Future<int> insertUser(AppUser user) async {
@@ -70,6 +84,16 @@ class AuthDatabaseService {
       return null;
     }
     return AppUser.fromRow(rows.first);
+  }
+
+  Future<void> updateUser(AppUser user) async {
+    final id = user.id;
+    if (id == null) {
+      throw ArgumentError('User id is required to update a stored user.');
+    }
+
+    final db = await database;
+    await db.update(_table, user.toRow(), where: 'id = ?', whereArgs: [id]);
   }
 
   Future<void> close() async {
