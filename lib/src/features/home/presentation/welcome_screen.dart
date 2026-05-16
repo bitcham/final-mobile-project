@@ -1,72 +1,42 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'package:movie_rating/src/core/theme/app_theme.dart';
-import 'package:movie_rating/src/core/widgets/cinerate_logo.dart';
-import 'package:movie_rating/src/core/widgets/profile_avatar.dart';
 import 'package:movie_rating/src/features/auth/data/auth_providers.dart';
+import 'package:movie_rating/src/features/auth/models/app_user.dart';
+import 'package:movie_rating/src/features/main/presentation/main_tab_screen.dart';
 
 class WelcomeScreen extends ConsumerWidget {
   const WelcomeScreen({super.key});
+
+  static const _fallbackUser = AppUser(
+    id: 0,
+    email: 'moviefan@example.com',
+    passwordHash: '',
+    passwordSalt: '',
+    realName: 'Movie Fan',
+  );
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final authState = ref.watch(authControllerProvider);
     final user = switch (authState.value) {
       Authenticated(:final user) => user,
-      _ => null,
+      _ => _fallbackUser,
     };
 
-    return CupertinoPageScaffold(
-      backgroundColor: CinerateColors.background,
-      child: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              const Center(child: CinerateLogo(fontSize: 28)),
-              const Spacer(),
-              Center(
-                child: ProfileAvatar(
-                  imagePath: user?.profileImagePath,
-                  size: 120,
-                ),
+    return MainTabScreen(
+      user: user,
+      onLogout: () => ref.read(authControllerProvider.notifier).logout(),
+      onUpdateProfile: (realName) => ref
+          .read(authControllerProvider.notifier)
+          .updateProfile(realName: realName),
+      onChangePassword: ({required currentPassword, required newPassword}) =>
+          ref
+              .read(authControllerProvider.notifier)
+              .changePassword(
+                currentPassword: currentPassword,
+                newPassword: newPassword,
               ),
-              const SizedBox(height: 24),
-              Text(
-                user == null
-                    ? 'Welcome back.'
-                    : 'Welcome back, ${user.realName}.',
-                textAlign: TextAlign.center,
-                style: CinerateText.titleLarge,
-              ),
-              const SizedBox(height: 16),
-              Text(
-                'You are logged in your favorite movie app.',
-                textAlign: TextAlign.center,
-                style: CinerateText.bodyLarge.copyWith(
-                  color: CinerateColors.textSecondary,
-                ),
-              ),
-              const Spacer(),
-              CupertinoButton(
-                padding: EdgeInsets.zero,
-                onPressed: () =>
-                    ref.read(authControllerProvider.notifier).logout(),
-                child: const Text(
-                  'Log out',
-                  style: TextStyle(
-                    fontFamily: 'Inter',
-                    fontWeight: FontWeight.bold,
-                    color: CinerateColors.primary,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
     );
   }
 }
