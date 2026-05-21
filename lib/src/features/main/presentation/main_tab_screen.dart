@@ -2,21 +2,22 @@ import 'dart:math' as math;
 
 import 'package:flutter/cupertino.dart';
 
+import 'package:movie_rating/src/core/models/movie_view.dart';
 import 'package:movie_rating/src/core/theme/app_theme.dart';
+import 'package:movie_rating/src/core/theme/cinerate_palette.dart';
 import 'package:movie_rating/src/core/widgets/cinerate_logo.dart';
+import 'package:movie_rating/src/core/widgets/movie_dialogs.dart';
+import 'package:movie_rating/src/core/widgets/movie_widgets.dart';
 import 'package:movie_rating/src/core/widgets/profile_avatar.dart';
 import 'package:movie_rating/src/features/auth/models/app_user.dart';
+import 'package:movie_rating/src/features/search/presentation/search_screen.dart';
 
 import 'trailer_launcher.dart';
 
-part 'components/main_tab_theme.dart';
 part 'components/main_tab_data.dart';
 part 'components/home_tab.dart';
-part 'components/search_tab.dart';
-part 'components/search_widgets.dart';
 part 'components/settings_tab.dart';
 part 'components/settings_widgets.dart';
-part 'components/movie_widgets.dart';
 part 'components/main_tab_dialogs.dart';
 part 'components/bottom_nav.dart';
 
@@ -36,6 +37,11 @@ class MainTabScreen extends StatefulWidget {
     this.onUpdateProfile,
     this.onChangePassword,
     this.onOpenTrailer,
+    this.initialRatings = const {},
+    this.initialRatedMovies = const [],
+    this.initialWatchlist = const [],
+    this.onPersistRating,
+    this.onPersistWatchlistToggle,
   });
 
   final AppUser user;
@@ -43,6 +49,11 @@ class MainTabScreen extends StatefulWidget {
   final ProfileUpdateCallback? onUpdateProfile;
   final PasswordChangeCallback? onChangePassword;
   final TrailerLauncherCallback? onOpenTrailer;
+  final Map<String, double> initialRatings;
+  final List<MovieView> initialRatedMovies;
+  final List<MovieView> initialWatchlist;
+  final Future<void> Function(MovieView movie, double rating)? onPersistRating;
+  final Future<void> Function(MovieView movie)? onPersistWatchlistToggle;
 
   @override
   State<MainTabScreen> createState() => _MainTabScreenState();
@@ -52,14 +63,28 @@ class _MainTabScreenState extends State<MainTabScreen> {
   _MainTab _tab = _MainTab.home;
   late AppUser _user = widget.user;
   bool _darkMode = true;
-  final Map<String, double> _userMovieRatings = <String, double>{};
-  final Set<String> _watchlistMovieTitles = <String>{};
-  final List<_RatingHistoryEntry> _ratingHistory = <_RatingHistoryEntry>[];
+  late Map<String, double> _userMovieRatings;
+  late Set<String> _watchlistMovieTitles;
+  late List<MovieView> _watchlistMovies;
+  late List<_RatingHistoryEntry> _ratingHistory;
 
-  List<_DesignMovie> get _watchlistMovies {
-    return _marvelMovies
-        .where((movie) => _watchlistMovieTitles.contains(movie.title))
-        .toList(growable: false);
+  @override
+  void initState() {
+    super.initState();
+    _seedLibrary();
+  }
+
+  void _seedLibrary() {
+    _userMovieRatings = {...widget.initialRatings};
+    _watchlistMovies = [...widget.initialWatchlist];
+    _watchlistMovieTitles = {for (final movie in _watchlistMovies) movie.title};
+    _ratingHistory = [
+      for (final movie in widget.initialRatedMovies)
+        _RatingHistoryEntry(
+          movie: movie,
+          rating: widget.initialRatings[movie.title] ?? movie.rating,
+        ),
+    ];
   }
 
   @override
@@ -67,6 +92,9 @@ class _MainTabScreenState extends State<MainTabScreen> {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.user != widget.user) {
       _user = widget.user;
+      if (oldWidget.user.id != widget.user.id) {
+        _seedLibrary();
+      }
     }
   }
 
@@ -92,11 +120,11 @@ class _MainTabScreenState extends State<MainTabScreen> {
     return changer(currentPassword: currentPassword, newPassword: newPassword);
   }
 
-  Future<void> _openTrailer(_DesignMovie movie) async {
+  Future<void> _openTrailer(MovieView movie) async {
     final trailerUrl = movie.trailerUrl;
     final movieTitle = movie.title.replaceAll('\n', ' ');
     if (trailerUrl == null) {
-      await _showInfoDialog(
+      await showInfoDialog(
         context,
         title: 'Trailer unavailable',
         message: '$movieTitle does not have a trailer link yet.',
@@ -113,7 +141,7 @@ class _MainTabScreenState extends State<MainTabScreen> {
 
     final opened = await openTrailerUri(trailerUri);
     if (!opened && mounted) {
-      await _showInfoDialog(
+      await showInfoDialog(
         context,
         title: 'Trailer unavailable',
         message: 'Could not open $movieTitle on YouTube.',
@@ -121,30 +149,36 @@ class _MainTabScreenState extends State<MainTabScreen> {
     }
   }
 
-  void _rateMovie(_DesignMovie movie, double rating) {
-    final normalizedRating = _normalizeRating(rating);
+  void _rateMovie(MovieView movie, double rating) {
+    final normalizedRating = normalizeRating(rating);
     setState(() {
       _userMovieRatings[movie.title] = normalizedRating;
+      _ratingHistory.removeWhere((entry) => entry.movie.title == movie.title);
       _ratingHistory.insert(
         0,
         _RatingHistoryEntry(movie: movie, rating: normalizedRating),
       );
     });
+    widget.onPersistRating?.call(movie, normalizedRating);
   }
 
-  void _toggleWatchlist(_DesignMovie movie) {
+  void _toggleWatchlist(MovieView movie) {
     setState(() {
-      if (!_watchlistMovieTitles.add(movie.title)) {
+      if (_watchlistMovieTitles.add(movie.title)) {
+        _watchlistMovies.insert(0, movie);
+      } else {
         _watchlistMovieTitles.remove(movie.title);
+        _watchlistMovies.removeWhere((m) => m.title == movie.title);
       }
     });
+    widget.onPersistWatchlistToggle?.call(movie);
   }
 
   @override
   Widget build(BuildContext context) {
-    final palette = _darkMode ? _CineratePalette.dark : _CineratePalette.light;
+    final palette = _darkMode ? CineratePalette.dark : CineratePalette.light;
 
-    return _CinerateThemeScope(
+    return CinerateThemeScope(
       palette: palette,
       child: CupertinoTheme(
         data: CupertinoThemeData(
@@ -210,10 +244,12 @@ class _MainTabScreenState extends State<MainTabScreen> {
                                   onRateMovie: _rateMovie,
                                   onToggleWatchlist: _toggleWatchlist,
                                 ),
-                                _SearchTab(
+                                SearchScreen(
                                   userRatings: _userMovieRatings,
+                                  watchlistTitles: _watchlistMovieTitles,
                                   onOpenTrailer: _openTrailer,
                                   onRateMovie: _rateMovie,
+                                  onToggleWatchlist: _toggleWatchlist,
                                 ),
                                 _SettingsTab(
                                   user: _user,

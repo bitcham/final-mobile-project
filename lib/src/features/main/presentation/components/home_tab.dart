@@ -17,9 +17,9 @@ class _HomeTab extends StatefulWidget {
   final Set<String> watchlistMovieTitles;
   final VoidCallback onOpenSearch;
   final VoidCallback onOpenSettings;
-  final Future<void> Function(_DesignMovie movie) onOpenTrailer;
-  final void Function(_DesignMovie movie, double rating) onRateMovie;
-  final void Function(_DesignMovie movie) onToggleWatchlist;
+  final Future<void> Function(MovieView movie) onOpenTrailer;
+  final void Function(MovieView movie, double rating) onRateMovie;
+  final void Function(MovieView movie) onToggleWatchlist;
 
   @override
   State<_HomeTab> createState() => _HomeTabState();
@@ -27,7 +27,7 @@ class _HomeTab extends StatefulWidget {
 
 class _HomeTabState extends State<_HomeTab> {
   final ScrollController _scrollController = ScrollController();
-  _DesignMovie _selectedMovie = _featuredMovie;
+  MovieView _selectedMovie = _featuredMovie;
 
   @override
   void dispose() {
@@ -35,7 +35,7 @@ class _HomeTabState extends State<_HomeTab> {
     super.dispose();
   }
 
-  void _selectTrendingMovie(_DesignMovie movie) {
+  void _selectTrendingMovie(MovieView movie) {
     setState(() => _selectedMovie = movie);
     if (_scrollController.hasClients) {
       _scrollController.animateTo(
@@ -46,11 +46,11 @@ class _HomeTabState extends State<_HomeTab> {
     }
   }
 
-  double? _userRatingFor(_DesignMovie movie) {
+  double? _userRatingFor(MovieView movie) {
     return widget.userRatings[movie.title];
   }
 
-  bool _isInWatchlist(_DesignMovie movie) {
+  bool _isInWatchlist(MovieView movie) {
     return widget.watchlistMovieTitles.contains(movie.title);
   }
 
@@ -138,7 +138,7 @@ class _HomeTabState extends State<_HomeTab> {
                 ),
                 sliver: SliverGrid(
                   delegate: SliverChildBuilderDelegate(
-                    (context, index) => _PosterTile(
+                    (context, index) => PosterTile(
                       key: ValueKey(
                         'trending-movie-${_trendingMovies[index].title}',
                       ),
@@ -219,12 +219,12 @@ class _HeroMoviePanel extends StatelessWidget {
     required this.onToggleWatchlist,
   });
 
-  final _DesignMovie movie;
+  final MovieView movie;
   final double? userRating;
   final bool inWatchlist;
-  final Future<void> Function(_DesignMovie movie) onOpenTrailer;
-  final void Function(_DesignMovie movie, double rating) onRateMovie;
-  final void Function(_DesignMovie movie) onToggleWatchlist;
+  final Future<void> Function(MovieView movie) onOpenTrailer;
+  final void Function(MovieView movie, double rating) onRateMovie;
+  final void Function(MovieView movie) onToggleWatchlist;
 
   @override
   Widget build(BuildContext context) {
@@ -263,7 +263,7 @@ class _HeroMoviePanel extends StatelessWidget {
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      _PosterTile(
+                      PosterTile(
                         movie: movie,
                         userRating: userRating,
                         large: true,
@@ -308,7 +308,7 @@ class _HeroMoviePanel extends StatelessWidget {
                                 spacing: 8,
                                 runSpacing: 6,
                                 children: movie.genres
-                                    .map(_GenrePill.new)
+                                    .map(GenrePill.new)
                                     .toList(),
                               ),
                             ],
@@ -326,7 +326,7 @@ class _HeroMoviePanel extends StatelessWidget {
                       children: [
                         Expanded(
                           flex: 3,
-                          child: _RoundedActionButton(
+                          child: RoundedActionButton(
                             label: 'Watch Trailer',
                             icon: CupertinoIcons.play_fill,
                             color: const Color(0xFFFF3131),
@@ -337,14 +337,14 @@ class _HeroMoviePanel extends StatelessWidget {
                         const SizedBox(width: 10),
                         Expanded(
                           flex: 2,
-                          child: _RoundedActionButton(
+                          child: RoundedActionButton(
                             key: ValueKey('hero-rate-${movie.title}'),
                             label: 'Rate',
                             icon: CupertinoIcons.star_fill,
                             color: CupertinoColors.white,
                             textColor: const Color(0xFF161A22),
                             onPressed: () async {
-                              final rating = await _showRatingRangeSheet(
+                              final rating = await showRatingRangeSheet(
                                 context,
                                 initialRating: userRating ?? movie.rating,
                                 title: 'Your Rating',
@@ -358,7 +358,7 @@ class _HeroMoviePanel extends StatelessWidget {
                           ),
                         ),
                         const SizedBox(width: 12),
-                        _CircleActionButton(
+                        CircleActionButton(
                           key: ValueKey('hero-watchlist-${movie.title}'),
                           icon: inWatchlist
                               ? CupertinoIcons.check_mark
@@ -366,7 +366,7 @@ class _HeroMoviePanel extends StatelessWidget {
                           onPressed: () {
                             final willAdd = !inWatchlist;
                             onToggleWatchlist(movie);
-                            _showInfoDialog(
+                            showInfoDialog(
                               context,
                               title: willAdd
                                   ? 'Added to watchlist'
@@ -391,7 +391,7 @@ class _HeroMoviePanel extends StatelessWidget {
 class _HeroBackdrop extends StatelessWidget {
   const _HeroBackdrop({required this.movie});
 
-  final _DesignMovie movie;
+  final MovieView movie;
 
   @override
   Widget build(BuildContext context) {

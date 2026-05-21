@@ -1,7 +1,12 @@
-part of '../main_tab_screen.dart';
+import 'package:flutter/cupertino.dart';
+import 'package:movie_rating/src/core/models/movie_view.dart';
+import 'package:movie_rating/src/core/theme/cinerate_palette.dart';
+import 'package:movie_rating/src/core/widgets/movie_dialogs.dart';
+import 'package:movie_rating/src/core/widgets/movie_widgets.dart';
 
-class _SearchField extends StatelessWidget {
-  const _SearchField({
+class SearchField extends StatelessWidget {
+  const SearchField({
+    super.key,
     required this.controller,
     required this.onChanged,
     required this.onVoiceSearch,
@@ -59,8 +64,12 @@ class _SearchField extends StatelessWidget {
   }
 }
 
-class _FilterChip extends StatelessWidget {
-  const _FilterChip({required this.label, required this.onPressed});
+class SearchFilterChip extends StatelessWidget {
+  const SearchFilterChip({
+    super.key,
+    required this.label,
+    required this.onPressed,
+  });
 
   final String label;
   final VoidCallback onPressed;
@@ -104,8 +113,10 @@ class _FilterChip extends StatelessWidget {
   }
 }
 
-class _EmptySearchState extends StatelessWidget {
-  const _EmptySearchState();
+class EmptySearchState extends StatelessWidget {
+  const EmptySearchState({super.key, this.message = 'No matches'});
+
+  final String message;
 
   @override
   Widget build(BuildContext context) {
@@ -114,7 +125,8 @@ class _EmptySearchState extends StatelessWidget {
       padding: const EdgeInsets.only(top: 72),
       child: Center(
         child: Text(
-          'No matches',
+          message,
+          textAlign: TextAlign.center,
           style: TextStyle(
             fontFamily: 'Inter',
             fontSize: 18,
@@ -126,8 +138,8 @@ class _EmptySearchState extends StatelessWidget {
   }
 }
 
-class _FunnelIcon extends StatelessWidget {
-  const _FunnelIcon();
+class FunnelIcon extends StatelessWidget {
+  const FunnelIcon({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -168,18 +180,48 @@ class _FunnelIconPainter extends CustomPainter {
   }
 }
 
-class _SearchResultTile extends StatelessWidget {
-  const _SearchResultTile({
+class SearchResultTile extends StatelessWidget {
+  const SearchResultTile({
+    super.key,
     required this.movie,
     required this.userRating,
     required this.onOpenTrailer,
     required this.onRateMovie,
+    required this.inWatchlist,
+    required this.onToggleWatchlist,
+    required this.resolveTrailer,
   });
 
-  final _DesignMovie movie;
+  final MovieView movie;
   final double? userRating;
-  final Future<void> Function(_DesignMovie movie) onOpenTrailer;
-  final void Function(_DesignMovie movie, double rating) onRateMovie;
+  final Future<void> Function(MovieView movie) onOpenTrailer;
+  final void Function(MovieView movie, double rating) onRateMovie;
+  final bool inWatchlist;
+  final void Function(MovieView movie) onToggleWatchlist;
+
+  final Future<String?> Function(MovieView movie) resolveTrailer;
+
+  Future<void> _openDetails(BuildContext context) async {
+    var resolved = movie;
+    if (movie.trailerUrl == null && movie.tmdbId != null) {
+      final url = await resolveTrailer(movie);
+      if (url != null) {
+        resolved = movie.copyWith(trailerUrl: url);
+      }
+    }
+    if (!context.mounted) {
+      return;
+    }
+    showMovieDetails(
+      context,
+      resolved,
+      userRating: userRating,
+      onOpenTrailer: onOpenTrailer,
+      onRateMovie: onRateMovie,
+      inWatchlist: inWatchlist,
+      onToggleWatchlist: onToggleWatchlist,
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -187,23 +229,20 @@ class _SearchResultTile extends StatelessWidget {
     return CupertinoButton(
       padding: EdgeInsets.zero,
       minimumSize: Size.zero,
-      onPressed: () => _showMovieDetails(
-        context,
-        movie,
-        userRating: userRating,
-        onOpenTrailer: onOpenTrailer,
-        onRateMovie: onRateMovie,
-      ),
+      onPressed: () => _openDetails(context),
       child: SizedBox(
         height: 150,
         child: Row(
           children: [
-            _PosterTile(
+            PosterTile(
               movie: movie,
               userRating: userRating,
               searchSize: true,
+              onPressed: () => _openDetails(context),
               onOpenTrailer: onOpenTrailer,
               onRateMovie: onRateMovie,
+              inWatchlist: inWatchlist,
+              onToggleWatchlist: onToggleWatchlist,
             ),
             const SizedBox(width: 26),
             Expanded(
@@ -214,16 +253,6 @@ class _SearchResultTile extends StatelessWidget {
                   borderRadius: BorderRadius.circular(18),
                   color: palette.surface,
                   border: Border.all(color: palette.textPrimary),
-                  gradient: movie.title == 'BREAKING BAD'
-                      ? LinearGradient(
-                          begin: Alignment.topRight,
-                          end: Alignment.bottomLeft,
-                          colors: [
-                            movie.palette[1].withValues(alpha: 0.42),
-                            palette.surface,
-                          ],
-                        )
-                      : null,
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -257,7 +286,7 @@ class _SearchResultTile extends StatelessWidget {
                     ),
                     Wrap(
                       spacing: 6,
-                      children: movie.genres.map(_TinyGenrePill.new).toList(),
+                      children: movie.genres.map(TinyGenrePill.new).toList(),
                     ),
                   ],
                 ),

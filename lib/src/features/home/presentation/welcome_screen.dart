@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:movie_rating/src/features/auth/data/auth_providers.dart';
 import 'package:movie_rating/src/features/auth/models/app_user.dart';
+import 'package:movie_rating/src/features/library/data/movie_library_providers.dart';
+import 'package:movie_rating/src/features/library/data/movie_library_repository.dart';
 import 'package:movie_rating/src/features/main/presentation/main_tab_screen.dart';
 
 class WelcomeScreen extends ConsumerWidget {
@@ -24,6 +26,17 @@ class WelcomeScreen extends ConsumerWidget {
       _ => _fallbackUser,
     };
 
+    final libraryAsync = ref.watch(movieLibraryControllerProvider);
+    if (libraryAsync.isLoading) {
+      return const CupertinoPageScaffold(
+        child: Center(child: CupertinoActivityIndicator()),
+      );
+    }
+    final library = libraryAsync.value ?? const MovieLibrary.empty();
+    final libraryController = ref.read(
+      movieLibraryControllerProvider.notifier,
+    );
+
     return MainTabScreen(
       user: user,
       onLogout: () => ref.read(authControllerProvider.notifier).logout(),
@@ -37,6 +50,11 @@ class WelcomeScreen extends ConsumerWidget {
                 currentPassword: currentPassword,
                 newPassword: newPassword,
               ),
+      initialRatings: library.ratings,
+      initialRatedMovies: library.ratedMovies,
+      initialWatchlist: library.watchlistMovies,
+      onPersistRating: libraryController.rate,
+      onPersistWatchlistToggle: libraryController.toggleWatchlist,
     );
   }
 }

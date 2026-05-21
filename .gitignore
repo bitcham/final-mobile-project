@@ -39,3 +39,6 @@ app.*.map.json
 /linux/
 /windows/
 /web/
+
+# Environment files with API keys
+.env

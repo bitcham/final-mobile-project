@@ -1,7 +1,16 @@
-part of '../main_tab_screen.dart';
+import 'package:flutter/cupertino.dart';
 
-class _PosterTile extends StatelessWidget {
-  const _PosterTile({
+import '../models/movie_view.dart';
+import '../theme/app_theme.dart';
+import '../theme/cinerate_palette.dart';
+import 'movie_dialogs.dart';
+
+/// Poster artwork with a rating badge, used in grids and search rows.
+///
+/// Tapping opens the shared movie-details dialog unless [onPressed] overrides
+/// it.
+class PosterTile extends StatelessWidget {
+  const PosterTile({
     super.key,
     required this.movie,
     required this.userRating,
@@ -10,15 +19,19 @@ class _PosterTile extends StatelessWidget {
     this.onPressed,
     this.large = false,
     this.searchSize = false,
+    this.inWatchlist = false,
+    this.onToggleWatchlist,
   });
 
-  final _DesignMovie movie;
+  final MovieView movie;
   final double? userRating;
-  final Future<void> Function(_DesignMovie movie) onOpenTrailer;
-  final void Function(_DesignMovie movie, double rating) onRateMovie;
+  final Future<void> Function(MovieView movie) onOpenTrailer;
+  final void Function(MovieView movie, double rating) onRateMovie;
   final VoidCallback? onPressed;
   final bool large;
   final bool searchSize;
+  final bool inWatchlist;
+  final void Function(MovieView movie)? onToggleWatchlist;
 
   @override
   Widget build(BuildContext context) {
@@ -47,7 +60,7 @@ class _PosterTile extends StatelessWidget {
             Positioned(
               left: 8,
               bottom: 8,
-              child: _RatingBadge(rating: movie.rating),
+              child: RatingBadge(rating: movie.rating),
             ),
           ],
         ),
@@ -58,12 +71,14 @@ class _PosterTile extends StatelessWidget {
       minimumSize: Size.zero,
       onPressed:
           onPressed ??
-          () => _showMovieDetails(
+          () => showMovieDetails(
             context,
             movie,
             userRating: userRating,
             onOpenTrailer: onOpenTrailer,
             onRateMovie: onRateMovie,
+            inWatchlist: inWatchlist,
+            onToggleWatchlist: onToggleWatchlist,
           ),
       child: tile,
     );
@@ -73,7 +88,7 @@ class _PosterTile extends StatelessWidget {
 class _PosterFallbackArt extends StatelessWidget {
   const _PosterFallbackArt({required this.movie, required this.large});
 
-  final _DesignMovie movie;
+  final MovieView movie;
   final bool large;
 
   @override
@@ -160,8 +175,8 @@ class _PosterTexturePainter extends CustomPainter {
   }
 }
 
-class _RatingBadge extends StatelessWidget {
-  const _RatingBadge({required this.rating});
+class RatingBadge extends StatelessWidget {
+  const RatingBadge({super.key, required this.rating});
 
   final double rating;
 
@@ -197,8 +212,8 @@ class _RatingBadge extends StatelessWidget {
   }
 }
 
-class _GenrePill extends StatelessWidget {
-  const _GenrePill(this.label);
+class GenrePill extends StatelessWidget {
+  const GenrePill(this.label, {super.key});
 
   final String label;
 
@@ -212,7 +227,7 @@ class _GenrePill extends StatelessWidget {
       ),
       child: Text(
         label,
-        style: TextStyle(
+        style: const TextStyle(
           fontFamily: 'Inter',
           fontSize: 11,
           fontWeight: FontWeight.w700,
@@ -223,8 +238,8 @@ class _GenrePill extends StatelessWidget {
   }
 }
 
-class _TinyGenrePill extends StatelessWidget {
-  const _TinyGenrePill(this.label);
+class TinyGenrePill extends StatelessWidget {
+  const TinyGenrePill(this.label, {super.key});
 
   final String label;
 
@@ -249,8 +264,8 @@ class _TinyGenrePill extends StatelessWidget {
   }
 }
 
-class _RoundedActionButton extends StatelessWidget {
-  const _RoundedActionButton({
+class RoundedActionButton extends StatelessWidget {
+  const RoundedActionButton({
     super.key,
     required this.label,
     required this.icon,
@@ -297,8 +312,8 @@ class _RoundedActionButton extends StatelessWidget {
   }
 }
 
-class _CircleActionButton extends StatelessWidget {
-  const _CircleActionButton({
+class CircleActionButton extends StatelessWidget {
+  const CircleActionButton({
     super.key,
     required this.icon,
     required this.onPressed,

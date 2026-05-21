@@ -2,37 +2,15 @@ part of '../main_tab_screen.dart';
 
 enum _MainTab { home, search, settings }
 
-class _DesignMovie {
-  const _DesignMovie({
-    required this.title,
-    required this.synopsis,
-    required this.rating,
-    required this.genres,
-    required this.palette,
-    this.year = 2025,
-    this.posterUrl,
-    this.trailerUrl,
-  });
-
-  final String title;
-  final String synopsis;
-  final double rating;
-  final List<String> genres;
-  final List<Color> palette;
-  final int year;
-  final String? posterUrl;
-  final String? trailerUrl;
-}
-
 class _RatingHistoryEntry {
   const _RatingHistoryEntry({required this.movie, required this.rating});
 
-  final _DesignMovie movie;
+  final MovieView movie;
   final double rating;
 }
 
 const _marvelMovies = [
-  _DesignMovie(
+  MovieView(
     title: 'Deadpool & Wolverine',
     synopsis:
         'Wade Wilson is pulled back into action when his homeworld is threatened and he has to convince a reluctant Wolverine to help.',
@@ -44,7 +22,7 @@ const _marvelMovies = [
         'https://cdn.marvel.com/content/2x/deadpoolandwolverine_lob_crd_03.jpg',
     trailerUrl: 'https://www.youtube.com/watch?v=73_1biulkYk',
   ),
-  _DesignMovie(
+  MovieView(
     title: 'Iron Man',
     synopsis:
         'Tony Stark escapes captivity by building a high-tech suit of armor, then uses it to confront a global threat tied to his own weapons.',
@@ -55,7 +33,7 @@ const _marvelMovies = [
     posterUrl: 'https://cdn.marvel.com/content/2x/ironman_lob_crd_01_4.jpg',
     trailerUrl: 'https://www.youtube.com/watch?v=8ugaeA-nMTc',
   ),
-  _DesignMovie(
+  MovieView(
     title: 'The Avengers',
     synopsis:
         'Nick Fury assembles Iron Man, Captain America, Thor, Hulk, Hawkeye, and Black Widow when a sudden enemy threatens global security.',
@@ -66,7 +44,7 @@ const _marvelMovies = [
     posterUrl: 'https://cdn.marvel.com/content/2x/theavengers_lob_crd_03_0.jpg',
     trailerUrl: 'https://www.youtube.com/watch?v=eOrNdBpGMv8',
   ),
-  _DesignMovie(
+  MovieView(
     title: 'Guardians of the Galaxy',
     synopsis:
         'Peter Quill steals a mysterious orb and forms an uneasy alliance with a crew of misfits to stop a cosmic threat.',
@@ -78,7 +56,7 @@ const _marvelMovies = [
         'https://cdn.marvel.com/content/2x/guardiansofthegalaxy_lob_crd_03_0.jpg',
     trailerUrl: 'https://www.youtube.com/watch?v=d96cjJhvlMA',
   ),
-  _DesignMovie(
+  MovieView(
     title: 'Doctor Strange',
     synopsis:
         'After a devastating accident, Stephen Strange discovers Kamar-Taj and must choose between his old life and defending reality.',
@@ -90,7 +68,7 @@ const _marvelMovies = [
         'https://cdn.marvel.com/content/2x/doctorstrange_lob_crd_01_7.jpg',
     trailerUrl: 'https://www.youtube.com/watch?v=Lt-U_t2pUHI',
   ),
-  _DesignMovie(
+  MovieView(
     title: 'Thor: Ragnarok',
     synopsis:
         'Thor races back to Asgard to stop Hela and Ragnarok, but first he has to survive a gladiator fight against Hulk.',
@@ -102,7 +80,7 @@ const _marvelMovies = [
         'https://cdn.marvel.com/content/2x/thorragnarok_lob_crd_03_0.jpg',
     trailerUrl: 'https://www.youtube.com/watch?v=ue80QwXMRHg',
   ),
-  _DesignMovie(
+  MovieView(
     title: 'Black Panther',
     synopsis:
         'T\'Challa returns to Wakanda to become king, then faces an old enemy whose challenge could endanger his nation and the world.',
@@ -114,7 +92,7 @@ const _marvelMovies = [
         'https://cdn.marvel.com/content/2x/blackpanther_lob_crd_01_5.jpg',
     trailerUrl: 'https://www.youtube.com/watch?v=xjDjIWPwcPU',
   ),
-  _DesignMovie(
+  MovieView(
     title: 'Avengers: Infinity War',
     synopsis:
         'The Avengers and their allies face Thanos, who is hunting the six Infinity Stones to impose his will on all reality.',
@@ -126,7 +104,7 @@ const _marvelMovies = [
         'https://cdn.marvel.com/content/2x/avengersinfinitywar_lob_crd_02.jpg',
     trailerUrl: 'https://www.youtube.com/watch?v=6ZfuNTqbHE8',
   ),
-  _DesignMovie(
+  MovieView(
     title: 'Avengers: Endgame',
     synopsis:
         'After Thanos fractures the universe and the Avengers, the remaining heroes gather for one final stand.',
@@ -138,7 +116,7 @@ const _marvelMovies = [
         'https://cdn.marvel.com/content/2x/avengersendgame_lob_crd_05.jpg',
     trailerUrl: 'https://www.youtube.com/watch?v=TcMBFSGVi1c',
   ),
-  _DesignMovie(
+  MovieView(
     title: 'Shang-Chi and the Legend of the Ten Rings',
     synopsis:
         'Shang-Chi is drawn into the Ten Rings organization and forced to confront the past he tried to leave behind.',
@@ -153,5 +131,4 @@ const _marvelMovies = [
 
 final _featuredMovie = _marvelMovies.first;
 const _trendingMovies = _marvelMovies;
-const _searchMovies = _marvelMovies;
 const _defaultProfileBio = 'Probably watching a movie rn.🍿';

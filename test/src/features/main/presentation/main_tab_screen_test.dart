@@ -1,7 +1,11 @@
 import 'package:flutter/cupertino.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:movie_rating/src/core/models/movie_view.dart';
 import 'package:movie_rating/src/features/auth/models/app_user.dart';
 import 'package:movie_rating/src/features/main/presentation/main_tab_screen.dart';
+import 'package:movie_rating/src/features/search/data/search_providers.dart';
+import 'package:movie_rating/src/features/search/data/tmdb_api_client.dart';
 import 'package:url_launcher_platform_interface/url_launcher_platform_interface.dart'
     as launcher_platform;
 
@@ -132,8 +136,7 @@ void main() {
     await _pumpMainTab(tester);
     await _openTab(tester, 'SEARCH');
 
-    await tester.enterText(find.byType(CupertinoTextField), 'iron');
-    await tester.pumpAndSettle();
+    await _enterQuery(tester, 'iron');
     expect(find.text('Iron Man'), findsWidgets);
 
     await tester.tap(find.text('Rating'));
@@ -240,14 +243,27 @@ Future<void> _pumpMainTab(
   tester.view.devicePixelRatio = 1;
 
   await tester.pumpWidget(
-    CupertinoApp(
-      home: MainTabScreen(
-        user: user,
-        onLogout: onLogout,
-        onOpenTrailer: onOpenTrailer,
+    ProviderScope(
+      overrides: [
+        tmdbApiClientProvider.overrideWithValue(_FakeTmdbApiClient()),
+      ],
+      child: CupertinoApp(
+        home: MainTabScreen(
+          user: user,
+          onLogout: onLogout,
+          onOpenTrailer: onOpenTrailer,
+        ),
       ),
     ),
   );
+  await tester.pumpAndSettle();
+}
+
+/// Applies the typed query, waiting out the search-field debounce.
+Future<void> _enterQuery(WidgetTester tester, String query) async {
+  await tester.enterText(find.byType(CupertinoTextField), query);
+  await tester.pump(const Duration(milliseconds: 450));
+  await tester.pumpAndSettle();
 }
 
 Future<void> _openTab(WidgetTester tester, String label) async {
@@ -263,6 +279,61 @@ Color? _scaffoldBackground(WidgetTester tester) {
 
 const _deadpoolTrailerUrl = 'https://www.youtube.com/watch?v=73_1biulkYk';
 const _ironManTrailerUrl = 'https://www.youtube.com/watch?v=8ugaeA-nMTc';
+
+/// In-memory TMDB stand-in so search tests stay offline and deterministic.
+class _FakeTmdbApiClient extends TmdbApiClient {
+  static const _catalog = [
+    MovieView(
+      title: 'Iron Man',
+      synopsis: 'Tony Stark escapes captivity and builds an armored suit.',
+      rating: 4.0,
+      genres: ['ACTION'],
+      year: 2008,
+    ),
+    MovieView(
+      title: 'The Avengers',
+      synopsis: 'Earth\'s mightiest heroes assemble.',
+      rating: 4.0,
+      genres: ['ACTION'],
+      year: 2012,
+    ),
+    MovieView(
+      title: 'Top Tier',
+      synopsis: 'A flawless five-star showcase.',
+      rating: 5.0,
+      genres: ['DRAMA'],
+      year: 2020,
+    ),
+  ];
+
+  @override
+  Future<TmdbPage> searchMovies({
+    required String query,
+    int page = 1,
+    int? year,
+  }) async {
+    final lower = query.toLowerCase();
+    final movies = _catalog
+        .where((m) => m.title.toLowerCase().contains(lower))
+        .where((m) => year == null || m.year == year)
+        .toList();
+    return TmdbPage(movies: movies, page: 1, totalPages: 1);
+  }
+
+  @override
+  Future<TmdbPage> discoverMovies({
+    int page = 1,
+    int? year,
+    double minRating = 0.0,
+    bool sortByRating = false,
+  }) async {
+    final movies = _catalog
+        .where((m) => year == null || m.year == year)
+        .where((m) => m.rating >= minRating)
+        .toList();
+    return TmdbPage(movies: movies, page: 1, totalPages: 1);
+  }
+}
 
 class _FakeUrlLauncherPlatform extends launcher_platform.UrlLauncherPlatform {
   String? launchedUrl;

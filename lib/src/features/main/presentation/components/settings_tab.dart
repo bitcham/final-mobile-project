@@ -13,7 +13,7 @@ class _SettingsTab extends StatefulWidget {
   });
 
   final AppUser user;
-  final List<_DesignMovie> watchlistMovies;
+  final List<MovieView> watchlistMovies;
   final List<_RatingHistoryEntry> ratingHistory;
   final VoidCallback? onLogout;
   final ProfileUpdateCallback onUpdateProfile;
@@ -272,7 +272,7 @@ class _SettingsTabState extends State<_SettingsTab> {
                   Navigator.of(dialogContext).pop();
                 }
                 if (context.mounted) {
-                  await _showInfoDialog(
+                  await showInfoDialog(
                     context,
                     title: 'Password updated',
                     message: 'Use the new password the next time you log in.',

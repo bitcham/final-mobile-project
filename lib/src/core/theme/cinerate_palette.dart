@@ -1,7 +1,10 @@
-part of '../main_tab_screen.dart';
+import 'package:flutter/cupertino.dart';
 
-class _CineratePalette {
-  const _CineratePalette({
+import 'app_theme.dart';
+
+/// Resolved colour set for one brightness, shared by every main-tab surface.
+class CineratePalette {
+  const CineratePalette({
     required this.brightness,
     required this.background,
     required this.surface,
@@ -27,7 +30,7 @@ class _CineratePalette {
 
   Color get primary => CinerateColors.primary;
 
-  static const dark = _CineratePalette(
+  static const dark = CineratePalette(
     brightness: Brightness.dark,
     background: Color(0xFF2A2A2A),
     surface: Color(0xFF171717),
@@ -40,7 +43,7 @@ class _CineratePalette {
     shadow: Color(0x66000000),
   );
 
-  static const light = _CineratePalette(
+  static const light = CineratePalette(
     brightness: Brightness.light,
     background: Color(0xFFF5F6F8),
     surface: Color(0xFFFFFFFF),
@@ -54,23 +57,28 @@ class _CineratePalette {
   );
 }
 
-class _CinerateThemeScope extends InheritedWidget {
-  const _CinerateThemeScope({required this.palette, required super.child});
+/// Exposes the active [CineratePalette] to the widget subtree.
+class CinerateThemeScope extends InheritedWidget {
+  const CinerateThemeScope({
+    super.key,
+    required this.palette,
+    required super.child,
+  });
 
-  final _CineratePalette palette;
+  final CineratePalette palette;
 
-  static _CineratePalette of(BuildContext context) {
+  static CineratePalette of(BuildContext context) {
     final scope = context
-        .dependOnInheritedWidgetOfExactType<_CinerateThemeScope>();
-    return scope?.palette ?? _CineratePalette.dark;
+        .dependOnInheritedWidgetOfExactType<CinerateThemeScope>();
+    return scope?.palette ?? CineratePalette.dark;
   }
 
   @override
-  bool updateShouldNotify(_CinerateThemeScope oldWidget) {
+  bool updateShouldNotify(CinerateThemeScope oldWidget) {
     return palette != oldWidget.palette;
   }
 }
 
-extension _CineratePaletteContext on BuildContext {
-  _CineratePalette get cineratePalette => _CinerateThemeScope.of(this);
+extension CineratePaletteContext on BuildContext {
+  CineratePalette get cineratePalette => CinerateThemeScope.of(this);
 }
