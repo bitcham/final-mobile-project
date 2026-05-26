@@ -14,46 +14,50 @@ class _CinerateBottomNav extends StatelessWidget {
     final palette = context.cineratePalette;
     return SafeArea(
       top: false,
-      minimum: const EdgeInsets.fromLTRB(18, 0, 18, 12),
-      child: Container(
-        height: 78,
-        padding: const EdgeInsets.symmetric(horizontal: 16),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(38),
-          color: palette.navBackground,
-          boxShadow: [
-            BoxShadow(
-              color: palette.shadow,
-              blurRadius: 24,
-              offset: const Offset(0, -4),
+      minimum: const EdgeInsets.fromLTRB(18, 0, 18, 8),
+      child: SizedBox(
+        height: 66,
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            border: Border(
+              top: BorderSide(
+                color: palette.textPrimary.withValues(alpha: 0.08),
+              ),
             ),
-          ],
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceAround,
-          children: [
-            _BottomNavItem(
-              tab: _MainTab.settings,
-              icon: CupertinoIcons.gear_solid,
-              label: 'SETTINGS',
-              selected: selectedTab == _MainTab.settings,
-              onSelected: onSelected,
-            ),
-            _BottomNavItem(
-              tab: _MainTab.home,
-              icon: CupertinoIcons.house_fill,
-              label: 'HOME',
-              selected: selectedTab == _MainTab.home,
-              onSelected: onSelected,
-            ),
-            _BottomNavItem(
-              tab: _MainTab.search,
-              icon: CupertinoIcons.search,
-              label: 'SEARCH',
-              selected: selectedTab == _MainTab.search,
-              onSelected: onSelected,
-            ),
-          ],
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            children: [
+              _BottomNavItem(
+                tab: _MainTab.home,
+                icon: CupertinoIcons.house_fill,
+                label: 'HOME',
+                selected: selectedTab == _MainTab.home,
+                onSelected: onSelected,
+              ),
+              _BottomNavItem(
+                tab: _MainTab.search,
+                icon: CupertinoIcons.search,
+                label: 'SEARCH',
+                selected: selectedTab == _MainTab.search,
+                onSelected: onSelected,
+              ),
+              _BottomNavItem(
+                tab: _MainTab.watchlist,
+                icon: CupertinoIcons.heart_fill,
+                label: 'WATCHLIST',
+                selected: selectedTab == _MainTab.watchlist,
+                onSelected: onSelected,
+              ),
+              _BottomNavItem(
+                tab: _MainTab.settings,
+                icon: CupertinoIcons.gear_solid,
+                label: 'SETTINGS',
+                selected: selectedTab == _MainTab.settings,
+                onSelected: onSelected,
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -83,8 +87,16 @@ class _BottomNavItem extends StatelessWidget {
       padding: EdgeInsets.zero,
       minimumSize: const Size(58, 58),
       onPressed: () => onSelected(tab),
-      child: SizedBox(
-        width: 86,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 180),
+        width: 82,
+        height: 54,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(18),
+          color: selected
+              ? palette.primary.withValues(alpha: 0.12)
+              : CupertinoColors.transparent,
+        ),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
@@ -96,9 +108,9 @@ class _BottomNavItem extends StatelessWidget {
               overflow: TextOverflow.ellipsis,
               style: TextStyle(
                 fontFamily: 'Inter',
-                fontSize: 10,
+                fontSize: 9,
                 fontWeight: FontWeight.w800,
-                letterSpacing: 1.3,
+                letterSpacing: 0,
                 color: color,
               ),
             ),

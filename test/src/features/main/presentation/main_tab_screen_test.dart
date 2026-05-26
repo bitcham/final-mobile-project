@@ -33,10 +33,11 @@ void main() {
     expect(find.text('Deadpool & Wolverine'), findsWidgets);
     expect(find.text('Trending Now'), findsOneWidget);
     expect(find.text('Watch Trailer'), findsOneWidget);
+    expect(find.text('WATCHLIST'), findsOneWidget);
     expect(find.text('Sonic 3'), findsNothing);
 
     await _openTab(tester, 'SEARCH');
-    expect(find.text('search for movies, series,...'), findsOneWidget);
+    expect(find.text('Search movies, genres...'), findsOneWidget);
     expect(find.text('Year'), findsOneWidget);
     expect(find.text('Rating'), findsOneWidget);
     expect(find.text('Sort By'), findsOneWidget);
@@ -101,22 +102,31 @@ void main() {
 
     await tester.tap(find.byKey(const ValueKey('trending-movie-Iron Man')));
     await tester.pumpAndSettle();
+    expect(
+      find.byKey(const ValueKey('movie-preview-Iron Man')),
+      findsOneWidget,
+    );
     expect(find.textContaining('Tony Stark escapes captivity'), findsOneWidget);
 
-    await tester.tap(find.byKey(const ValueKey('hero-watchlist-Iron Man')));
-    await tester.pumpAndSettle();
-    expect(find.text('Added to watchlist'), findsOneWidget);
-    await tester.tap(find.text('OK'));
+    await tester.tap(
+      find.byKey(const ValueKey('movie-preview-watchlist-Iron Man')),
+    );
     await tester.pumpAndSettle();
 
-    await tester.tap(find.byKey(const ValueKey('hero-rate-Iron Man')));
+    await tester.tap(find.byKey(const ValueKey('trending-movie-Iron Man')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('movie-preview-rate-Iron Man')));
     await tester.pumpAndSettle();
     await tester.tap(find.byKey(const ValueKey('rating-preset-4.5')));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Save rating'));
     await tester.pumpAndSettle();
 
-    await tester.tap(find.text('Watch Trailer'));
+    await tester.tap(find.byKey(const ValueKey('trending-movie-Iron Man')));
+    await tester.pumpAndSettle();
+    await tester.tap(
+      find.byKey(const ValueKey('movie-preview-trailer-Iron Man')),
+    );
     await tester.pumpAndSettle();
     expect(openedTrailerUrls.last, Uri.parse(_ironManTrailerUrl));
 
@@ -130,6 +140,14 @@ void main() {
     await tester.tap(find.text('History'));
     await tester.pumpAndSettle();
     expect(find.textContaining('Iron Man - 4.5 ★'), findsOneWidget);
+    await tester.tap(find.text('Close'));
+    await tester.pumpAndSettle();
+
+    await _openTab(tester, 'WATCHLIST');
+    expect(
+      find.byKey(const ValueKey('watchlist-movie-Iron Man')),
+      findsOneWidget,
+    );
   });
 
   testWidgets('search filters support rating and year ranges', (tester) async {
@@ -177,15 +195,15 @@ void main() {
     tester,
   ) async {
     await _pumpMainTab(tester);
-    expect(_scaffoldBackground(tester), const Color(0xFF2A2A2A));
+    expect(_scaffoldBackground(tester), const Color(0xFF0B0B0F));
 
     await _openTab(tester, 'SETTINGS');
     await tester.tap(find.byType(CupertinoSwitch));
     await tester.pumpAndSettle();
-    expect(_scaffoldBackground(tester), const Color(0xFFF5F6F8));
+    expect(_scaffoldBackground(tester), const Color(0xFFF5F5F7));
     expect(
       tester.widget<Text>(find.text('Dark mode')).style?.color,
-      const Color(0xFF161A22),
+      const Color(0xFF111113),
     );
 
     await tester.tap(find.byKey(const ValueKey('edit-bio-button')));
@@ -204,7 +222,7 @@ void main() {
           .widget<Text>(find.textContaining('homeworld is threatened').first)
           .style
           ?.color,
-      CupertinoColors.white,
+      CupertinoColors.white.withValues(alpha: 0.88),
     );
   });
 
@@ -248,6 +266,12 @@ Future<void> _pumpMainTab(
         tmdbApiClientProvider.overrideWithValue(_FakeTmdbApiClient()),
       ],
       child: CupertinoApp(
+        builder: (context, child) {
+          return MediaQuery(
+            data: MediaQuery.of(context).copyWith(disableAnimations: true),
+            child: child!,
+          );
+        },
         home: MainTabScreen(
           user: user,
           onLogout: onLogout,
@@ -284,11 +308,21 @@ const _ironManTrailerUrl = 'https://www.youtube.com/watch?v=8ugaeA-nMTc';
 class _FakeTmdbApiClient extends TmdbApiClient {
   static const _catalog = [
     MovieView(
+      title: 'Deadpool & Wolverine',
+      synopsis:
+          'Wade Wilson is pulled back into action when his homeworld is threatened.',
+      rating: 4.6,
+      genres: ['ACTION', 'COMEDY'],
+      year: 2024,
+      trailerUrl: _deadpoolTrailerUrl,
+    ),
+    MovieView(
       title: 'Iron Man',
       synopsis: 'Tony Stark escapes captivity and builds an armored suit.',
       rating: 4.0,
       genres: ['ACTION'],
       year: 2008,
+      trailerUrl: _ironManTrailerUrl,
     ),
     MovieView(
       title: 'The Avengers',
@@ -326,11 +360,34 @@ class _FakeTmdbApiClient extends TmdbApiClient {
     int? year,
     double minRating = 0.0,
     bool sortByRating = false,
+    int? genreId,
   }) async {
     final movies = _catalog
         .where((m) => year == null || m.year == year)
         .where((m) => m.rating >= minRating)
+        .where((m) => genreId != 28 || m.genres.contains('ACTION'))
         .toList();
+    return TmdbPage(movies: movies, page: 1, totalPages: 1);
+  }
+
+  @override
+  Future<TmdbPage> nowPlayingMovies({int page = 1}) async {
+    return const TmdbPage(movies: _catalog, page: 1, totalPages: 1);
+  }
+
+  @override
+  Future<TmdbPage> popularMovies({int page = 1}) async {
+    return const TmdbPage(movies: _catalog, page: 1, totalPages: 1);
+  }
+
+  @override
+  Future<TmdbPage> topRatedMovies({int page = 1}) async {
+    return const TmdbPage(movies: _catalog, page: 1, totalPages: 1);
+  }
+
+  @override
+  Future<TmdbPage> genreMovies({required int genreId, int page = 1}) async {
+    final movies = _catalog.where((m) => m.genres.contains('ACTION')).toList();
     return TmdbPage(movies: movies, page: 1, totalPages: 1);
   }
 }

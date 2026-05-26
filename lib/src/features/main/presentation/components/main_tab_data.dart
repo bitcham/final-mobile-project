@@ -1,6 +1,67 @@
 part of '../main_tab_screen.dart';
 
-enum _MainTab { home, search, settings }
+enum _MainTab { home, search, watchlist, settings }
+
+class _HomeMovieCollections {
+  const _HomeMovieCollections({
+    required this.latest,
+    required this.trending,
+    required this.topRated,
+    required this.action,
+    required this.rewatch,
+    required this.fromApi,
+  });
+
+  final List<MovieView> latest;
+  final List<MovieView> trending;
+  final List<MovieView> topRated;
+  final List<MovieView> action;
+  final List<MovieView> rewatch;
+  final bool fromApi;
+
+  factory _HomeMovieCollections.fallback() {
+    return _HomeMovieCollections(
+      latest: _latestMovies,
+      trending: _trendingMovies,
+      topRated: _topRatedMovies,
+      action: _actionMovies,
+      rewatch: _rewatchMovies,
+      fromApi: false,
+    );
+  }
+}
+
+final _homeMovieCollectionsProvider = FutureProvider<_HomeMovieCollections>((
+  ref,
+) async {
+  final client = ref.read(tmdbApiClientProvider);
+  final latest = await client.nowPlayingMovies();
+  final trending = await client.popularMovies();
+  final topRated = await client.topRatedMovies();
+  final action = await client.genreMovies(genreId: 28);
+
+  final latestMovies = _dedupeMovies(latest.movies);
+  final trendingMovies = _dedupeMovies(trending.movies);
+  final topRatedMovies = _dedupeMovies(topRated.movies);
+  final actionMovies = _dedupeMovies(action.movies);
+
+  return _HomeMovieCollections(
+    latest: latestMovies.isEmpty ? _latestMovies : latestMovies,
+    trending: trendingMovies.isEmpty ? _trendingMovies : trendingMovies,
+    topRated: topRatedMovies.isEmpty ? _topRatedMovies : topRatedMovies,
+    action: actionMovies.isEmpty ? _actionMovies : actionMovies,
+    rewatch: topRatedMovies.isEmpty ? _rewatchMovies : topRatedMovies,
+    fromApi: true,
+  );
+});
+
+List<MovieView> _dedupeMovies(List<MovieView> movies) {
+  final seen = <String>{};
+  return [
+    for (final movie in movies)
+      if (seen.add('${movie.tmdbId ?? movie.title}-${movie.year}')) movie,
+  ];
+}
 
 class _RatingHistoryEntry {
   const _RatingHistoryEntry({required this.movie, required this.rating});
@@ -129,6 +190,19 @@ const _marvelMovies = [
   ),
 ];
 
-final _featuredMovie = _marvelMovies.first;
+final _latestMovies = List<MovieView>.unmodifiable(
+  [..._marvelMovies]..sort((a, b) => b.year.compareTo(a.year)),
+);
 const _trendingMovies = _marvelMovies;
+final _topRatedMovies = List<MovieView>.unmodifiable(
+  [..._marvelMovies]..sort((a, b) => b.rating.compareTo(a.rating)),
+);
+final _actionMovies = List<MovieView>.unmodifiable(
+  _marvelMovies
+      .where((movie) => movie.genres.contains('ACTION'))
+      .toList(growable: false),
+);
+final _rewatchMovies = List<MovieView>.unmodifiable(
+  _marvelMovies.where((movie) => movie.year < 2018).toList(growable: false),
+);
 const _defaultProfileBio = 'Probably watching a movie rn.🍿';

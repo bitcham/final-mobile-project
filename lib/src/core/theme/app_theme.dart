@@ -3,13 +3,13 @@ import 'package:flutter/cupertino.dart';
 class CinerateColors {
   const CinerateColors._();
 
-  static const Color background = Color(0xFF2A2A2A);
-  static const Color surface = Color(0xFF000000);
-  static const Color primary = Color(0xFFDC2626);
+  static const Color background = Color(0xFF0B0B0F);
+  static const Color surface = Color(0xFF1C1C1E);
+  static const Color primary = Color(0xFFFF453A);
   static const Color textPrimary = Color(0xFFFFFFFF);
-  static const Color textSecondary = Color(0xFFA0A0A0);
-  static const Color tagBackground = Color(0xFF3A3A3A);
-  static const Color inputBackground = Color(0xFF1A1A1A);
+  static const Color textSecondary = Color(0xFFAEAEB2);
+  static const Color tagBackground = Color(0xFF2C2C2E);
+  static const Color inputBackground = Color(0xFF1C1C1E);
 }
 
 class CinerateText {

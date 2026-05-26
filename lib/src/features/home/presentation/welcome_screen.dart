@@ -33,9 +33,7 @@ class WelcomeScreen extends ConsumerWidget {
       );
     }
     final library = libraryAsync.value ?? const MovieLibrary.empty();
-    final libraryController = ref.read(
-      movieLibraryControllerProvider.notifier,
-    );
+    final libraryController = ref.read(movieLibraryControllerProvider.notifier);
 
     return MainTabScreen(
       user: user,

@@ -1,6 +1,8 @@
 import 'dart:math' as math;
+import 'dart:ui' as ui;
 
 import 'package:flutter/cupertino.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:movie_rating/src/core/models/movie_view.dart';
 import 'package:movie_rating/src/core/theme/app_theme.dart';
@@ -10,6 +12,7 @@ import 'package:movie_rating/src/core/widgets/movie_dialogs.dart';
 import 'package:movie_rating/src/core/widgets/movie_widgets.dart';
 import 'package:movie_rating/src/core/widgets/profile_avatar.dart';
 import 'package:movie_rating/src/features/auth/models/app_user.dart';
+import 'package:movie_rating/src/features/search/data/search_providers.dart';
 import 'package:movie_rating/src/features/search/presentation/search_screen.dart';
 
 import 'trailer_launcher.dart';
@@ -19,6 +22,7 @@ part 'components/home_tab.dart';
 part 'components/settings_tab.dart';
 part 'components/settings_widgets.dart';
 part 'components/main_tab_dialogs.dart';
+part 'components/watchlist_tab.dart';
 part 'components/bottom_nav.dart';
 
 typedef ProfileUpdateCallback = Future<AppUser> Function(String realName);
@@ -29,7 +33,7 @@ typedef PasswordChangeCallback =
     });
 typedef TrailerLauncherCallback = Future<void> Function(Uri trailerUrl);
 
-class MainTabScreen extends StatefulWidget {
+class MainTabScreen extends ConsumerStatefulWidget {
   const MainTabScreen({
     super.key,
     required this.user,
@@ -56,10 +60,10 @@ class MainTabScreen extends StatefulWidget {
   final Future<void> Function(MovieView movie)? onPersistWatchlistToggle;
 
   @override
-  State<MainTabScreen> createState() => _MainTabScreenState();
+  ConsumerState<MainTabScreen> createState() => _MainTabScreenState();
 }
 
-class _MainTabScreenState extends State<MainTabScreen> {
+class _MainTabScreenState extends ConsumerState<MainTabScreen> {
   _MainTab _tab = _MainTab.home;
   late AppUser _user = widget.user;
   bool _darkMode = true;
@@ -67,6 +71,7 @@ class _MainTabScreenState extends State<MainTabScreen> {
   late Set<String> _watchlistMovieTitles;
   late List<MovieView> _watchlistMovies;
   late List<_RatingHistoryEntry> _ratingHistory;
+  final Map<int, String?> _trailerCache = {};
 
   @override
   void initState() {
@@ -121,7 +126,22 @@ class _MainTabScreenState extends State<MainTabScreen> {
   }
 
   Future<void> _openTrailer(MovieView movie) async {
-    final trailerUrl = movie.trailerUrl;
+    var trailerUrl = movie.trailerUrl;
+    final tmdbId = movie.tmdbId;
+    if (trailerUrl == null && tmdbId != null) {
+      if (_trailerCache.containsKey(tmdbId)) {
+        trailerUrl = _trailerCache[tmdbId];
+      } else {
+        trailerUrl = await ref
+            .read(tmdbApiClientProvider)
+            .fetchTrailerUrl(tmdbId);
+        _trailerCache[tmdbId] = trailerUrl;
+      }
+      if (!mounted) {
+        return;
+      }
+    }
+
     final movieTitle = movie.title.replaceAll('\n', ' ');
     if (trailerUrl == null) {
       await showInfoDialog(
@@ -177,6 +197,19 @@ class _MainTabScreenState extends State<MainTabScreen> {
   @override
   Widget build(BuildContext context) {
     final palette = _darkMode ? CineratePalette.dark : CineratePalette.light;
+    final homeMoviesAsync = ref.watch(_homeMovieCollectionsProvider);
+    final homeMovieCollections = homeMoviesAsync.when(
+      data: (collections) => collections,
+      loading: _HomeMovieCollections.fallback,
+      error: (_, _) => _HomeMovieCollections.fallback(),
+    );
+    final homeMovieStatus = homeMoviesAsync.when<String?>(
+      data: (collections) => collections.fromApi
+          ? null
+          : 'Bundled picks are showing until TMDB is ready.',
+      loading: () => 'Loading TMDB posters...',
+      error: (error, _) => error.toString().replaceFirst('TmdbException: ', ''),
+    );
 
     return CinerateThemeScope(
       palette: palette,
@@ -234,12 +267,21 @@ class _MainTabScreenState extends State<MainTabScreen> {
                               children: [
                                 _HomeTab(
                                   user: _user,
+                                  movieCollections: homeMovieCollections,
+                                  movieFeedStatus: homeMovieStatus,
+                                  movieFeedStatusIsLoading:
+                                      homeMoviesAsync.isLoading,
                                   userRatings: _userMovieRatings,
                                   watchlistMovieTitles: _watchlistMovieTitles,
                                   onOpenSearch: () =>
                                       setState(() => _tab = _MainTab.search),
                                   onOpenSettings: () =>
                                       setState(() => _tab = _MainTab.settings),
+                                  onOpenWatchlist: () =>
+                                      setState(() => _tab = _MainTab.watchlist),
+                                  onRefreshMovies: () => ref.invalidate(
+                                    _homeMovieCollectionsProvider,
+                                  ),
                                   onOpenTrailer: _openTrailer,
                                   onRateMovie: _rateMovie,
                                   onToggleWatchlist: _toggleWatchlist,
@@ -247,6 +289,16 @@ class _MainTabScreenState extends State<MainTabScreen> {
                                 SearchScreen(
                                   userRatings: _userMovieRatings,
                                   watchlistTitles: _watchlistMovieTitles,
+                                  onOpenTrailer: _openTrailer,
+                                  onRateMovie: _rateMovie,
+                                  onToggleWatchlist: _toggleWatchlist,
+                                ),
+                                _WatchlistTab(
+                                  movies: _watchlistMovies,
+                                  userRatings: _userMovieRatings,
+                                  watchlistMovieTitles: _watchlistMovieTitles,
+                                  onOpenSearch: () =>
+                                      setState(() => _tab = _MainTab.search),
                                   onOpenTrailer: _openTrailer,
                                   onRateMovie: _rateMovie,
                                   onToggleWatchlist: _toggleWatchlist,

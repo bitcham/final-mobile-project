@@ -25,7 +25,7 @@ class SearchField extends StatelessWidget {
         controller: controller,
         onChanged: onChanged,
         padding: const EdgeInsets.symmetric(horizontal: 14),
-        placeholder: 'search for movies, series,...',
+        placeholder: 'Search movies, genres...',
         placeholderStyle: TextStyle(
           fontFamily: 'Inter',
           fontSize: 17,
@@ -81,32 +81,33 @@ class SearchFilterChip extends StatelessWidget {
       padding: EdgeInsets.zero,
       minimumSize: Size.zero,
       onPressed: onPressed,
-      child: Container(
-        height: 38,
+      child: LiquidGlassPane(
+        borderRadius: 22,
         padding: const EdgeInsets.symmetric(horizontal: 16),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(22),
-          color: palette.inputBackground,
-          border: Border.all(color: palette.tagBackground),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              label,
-              style: TextStyle(
-                fontFamily: 'Inter',
-                fontWeight: FontWeight.w700,
+        tint: palette.inputBackground,
+        tintOpacity: palette.brightness == Brightness.dark ? 0.64 : 0.86,
+        shadowOpacity: 0.08,
+        child: SizedBox(
+          height: 38,
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                label,
+                style: TextStyle(
+                  fontFamily: 'Inter',
+                  fontWeight: FontWeight.w700,
+                  color: palette.textPrimary,
+                ),
+              ),
+              const SizedBox(width: 4),
+              Icon(
+                CupertinoIcons.chevron_down,
+                size: 13,
                 color: palette.textPrimary,
               ),
-            ),
-            const SizedBox(width: 4),
-            Icon(
-              CupertinoIcons.chevron_down,
-              size: 13,
-              color: palette.textPrimary,
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -198,7 +199,6 @@ class SearchResultTile extends StatelessWidget {
   final void Function(MovieView movie, double rating) onRateMovie;
   final bool inWatchlist;
   final void Function(MovieView movie) onToggleWatchlist;
-
   final Future<String?> Function(MovieView movie) resolveTrailer;
 
   Future<void> _openDetails(BuildContext context) async {
@@ -231,7 +231,7 @@ class SearchResultTile extends StatelessWidget {
       minimumSize: Size.zero,
       onPressed: () => _openDetails(context),
       child: SizedBox(
-        height: 150,
+        height: 148,
         child: Row(
           children: [
             PosterTile(
@@ -244,51 +244,70 @@ class SearchResultTile extends StatelessWidget {
               inWatchlist: inWatchlist,
               onToggleWatchlist: onToggleWatchlist,
             ),
-            const SizedBox(width: 26),
+            const SizedBox(width: 14),
             Expanded(
-              child: Container(
-                height: 140,
-                padding: const EdgeInsets.all(14),
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(18),
-                  color: palette.surface,
-                  border: Border.all(color: palette.textPrimary),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      movie.title,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        fontFamily: 'Inter',
-                        fontSize: 18,
-                        height: 1,
-                        fontWeight: FontWeight.w900,
-                        color: palette.textPrimary,
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    Expanded(
-                      child: Text(
-                        movie.synopsis,
-                        maxLines: 4,
+              child: LiquidGlassPane(
+                borderRadius: 20,
+                padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
+                tint: palette.surface,
+                tintOpacity: palette.brightness == Brightness.dark
+                    ? 0.58
+                    : 0.88,
+                shadowOpacity: 0.06,
+                child: SizedBox(
+                  height: 116,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        movie.title,
+                        maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(
                           fontFamily: 'Inter',
-                          fontSize: 11,
-                          height: 1.55,
-                          fontWeight: FontWeight.w700,
+                          fontSize: 17,
+                          height: 1.05,
+                          fontWeight: FontWeight.w900,
                           color: palette.textPrimary,
                         ),
                       ),
-                    ),
-                    Wrap(
-                      spacing: 6,
-                      children: movie.genres.map(TinyGenrePill.new).toList(),
-                    ),
-                  ],
+                      const SizedBox(height: 7),
+                      Text(
+                        '${movie.year} • ${movie.rating.toStringAsFixed(1)} ★',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontFamily: 'Inter',
+                          fontSize: 10,
+                          fontWeight: FontWeight.w800,
+                          color: palette.primary,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Expanded(
+                        child: Text(
+                          movie.synopsis,
+                          maxLines: 3,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontFamily: 'Inter',
+                            fontSize: 11,
+                            height: 1.55,
+                            fontWeight: FontWeight.w600,
+                            color: palette.textSecondary,
+                          ),
+                        ),
+                      ),
+                      Wrap(
+                        spacing: 6,
+                        runSpacing: 6,
+                        children: movie.genres
+                            .take(3)
+                            .map(TinyGenrePill.new)
+                            .toList(),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),

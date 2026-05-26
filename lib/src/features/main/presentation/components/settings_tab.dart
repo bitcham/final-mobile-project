@@ -36,7 +36,7 @@ class _SettingsTabState extends State<_SettingsTab> {
         return SafeArea(
           bottom: false,
           child: ListView(
-            padding: EdgeInsets.fromLTRB(20, compact ? 12 : 32, 20, 112),
+            padding: EdgeInsets.fromLTRB(20, compact ? 12 : 32, 20, 34),
             children: [
               _ProfileSummaryCard(
                 user: widget.user,

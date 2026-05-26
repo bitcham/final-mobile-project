@@ -59,7 +59,7 @@ Future<void> _showRatingHistoryDialog(
   );
 }
 
-Future<void> _showTrendingDialog(BuildContext context) {
+Future<void> _showTrendingDialog(BuildContext context, List<MovieView> movies) {
   return showCupertinoDialog<void>(
     context: context,
     useRootNavigator: false,
@@ -67,7 +67,7 @@ Future<void> _showTrendingDialog(BuildContext context) {
       title: const Text('All trending'),
       content: Padding(
         padding: const EdgeInsets.only(top: 10),
-        child: Text(_trendingMovies.map((movie) => movie.title).join('\n')),
+        child: Text(movies.map((movie) => movie.title).join('\n')),
       ),
       actions: [
         CupertinoDialogAction(
@@ -83,6 +83,7 @@ Future<void> _showHomeMenu(
   BuildContext context, {
   required VoidCallback onOpenSearch,
   required VoidCallback onOpenSettings,
+  required VoidCallback onOpenWatchlist,
 }) {
   return showCupertinoModalPopup<void>(
     context: context,
@@ -96,6 +97,13 @@ Future<void> _showHomeMenu(
             onOpenSearch();
           },
           child: const Text('Search'),
+        ),
+        CupertinoActionSheetAction(
+          onPressed: () {
+            Navigator.of(context).pop();
+            onOpenWatchlist();
+          },
+          child: const Text('Watchlist'),
         ),
         CupertinoActionSheetAction(
           onPressed: () {

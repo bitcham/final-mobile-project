@@ -62,6 +62,7 @@ class TmdbApiClient {
     int? year,
     double minRating = 0.0,
     bool sortByRating = false,
+    int? genreId,
   }) {
     return _getPage('/3/discover/movie', {
       'page': '$page',
@@ -70,7 +71,30 @@ class TmdbApiClient {
       if (sortByRating) 'vote_count.gte': '200',
       if (minRating > 0) 'vote_average.gte': '${minRating * 2}',
       if (year != null) 'primary_release_year': '$year',
+      if (genreId != null) 'with_genres': '$genreId',
     });
+  }
+
+  Future<TmdbPage> nowPlayingMovies({int page = 1}) {
+    return _getPage('/3/movie/now_playing', {
+      'page': '$page',
+      'include_adult': 'false',
+    });
+  }
+
+  Future<TmdbPage> popularMovies({int page = 1}) {
+    return discoverMovies(page: page);
+  }
+
+  Future<TmdbPage> topRatedMovies({int page = 1}) {
+    return _getPage('/3/movie/top_rated', {
+      'page': '$page',
+      'include_adult': 'false',
+    });
+  }
+
+  Future<TmdbPage> genreMovies({required int genreId, int page = 1}) {
+    return discoverMovies(page: page, genreId: genreId);
   }
 
   Future<Map<String, dynamic>> _getJson(
