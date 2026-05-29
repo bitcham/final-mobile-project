@@ -6,6 +6,7 @@ class AppUser {
     required this.passwordSalt,
     required this.realName,
     this.profileImagePath,
+    this.bio,
   });
 
   final int? id;
@@ -14,6 +15,7 @@ class AppUser {
   final String passwordSalt;
   final String realName;
   final String? profileImagePath;
+  final String? bio;
 
   AppUser copyWith({
     int? id,
@@ -22,6 +24,7 @@ class AppUser {
     String? passwordSalt,
     String? realName,
     String? profileImagePath,
+    String? bio,
   }) {
     return AppUser(
       id: id ?? this.id,
@@ -30,6 +33,7 @@ class AppUser {
       passwordSalt: passwordSalt ?? this.passwordSalt,
       realName: realName ?? this.realName,
       profileImagePath: profileImagePath ?? this.profileImagePath,
+      bio: bio ?? this.bio,
     );
   }
 
@@ -41,6 +45,7 @@ class AppUser {
       passwordSalt: row['password_salt'] as String? ?? '',
       realName: row['real_name'] as String? ?? '',
       profileImagePath: row['profile_image_path'] as String?,
+      bio: row['bio'] as String?,
     );
   }
 
@@ -52,6 +57,7 @@ class AppUser {
       'password_salt': passwordSalt,
       'real_name': realName,
       'profile_image_path': profileImagePath,
+      'bio': bio,
     };
   }
 }

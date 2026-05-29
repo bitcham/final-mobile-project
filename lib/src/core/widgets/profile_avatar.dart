@@ -23,6 +23,7 @@ class ProfileAvatar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = context.cineratePalette;
     final hasValidFile =
         imagePath != null &&
         imagePath!.isNotEmpty &&
@@ -36,8 +37,8 @@ class ProfileAvatar extends StatelessWidget {
       height: size,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
-        color: CinerateColors.surface,
-        border: Border.all(color: CinerateColors.tagBackground, width: 2),
+        color: palette.surface,
+        border: Border.all(color: palette.tagBackground, width: 2),
         image: DecorationImage(image: image, fit: BoxFit.cover),
       ),
     );
@@ -52,12 +53,12 @@ class ProfileAvatar extends StatelessWidget {
             height: size * 0.32,
             decoration: const BoxDecoration(
               shape: BoxShape.circle,
-              color: CinerateColors.primary,
+              color: CineratePalette.brand,
             ),
             child: const Icon(
               CupertinoIcons.pencil,
               size: 16,
-              color: CinerateColors.textPrimary,
+              color: CupertinoColors.white,
             ),
           ),
       ],

@@ -6,7 +6,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:movie_rating/src/core/models/movie_view.dart';
 import 'package:movie_rating/src/core/theme/app_theme.dart';
-import 'package:movie_rating/src/core/theme/cinerate_palette.dart';
 import 'package:movie_rating/src/core/widgets/cinerate_logo.dart';
 import 'package:movie_rating/src/core/widgets/movie_dialogs.dart';
 import 'package:movie_rating/src/core/widgets/movie_widgets.dart';
@@ -14,6 +13,7 @@ import 'package:movie_rating/src/core/widgets/profile_avatar.dart';
 import 'package:movie_rating/src/features/auth/models/app_user.dart';
 import 'package:movie_rating/src/features/search/data/search_providers.dart';
 import 'package:movie_rating/src/features/search/presentation/search_screen.dart';
+import 'package:movie_rating/src/features/settings/data/settings_service.dart';
 
 import 'trailer_launcher.dart';
 
@@ -25,7 +25,8 @@ part 'components/main_tab_dialogs.dart';
 part 'components/watchlist_tab.dart';
 part 'components/bottom_nav.dart';
 
-typedef ProfileUpdateCallback = Future<AppUser> Function(String realName);
+typedef ProfileUpdateCallback =
+    Future<AppUser> Function({String? realName, String? bio});
 typedef PasswordChangeCallback =
     Future<bool> Function({
       required String currentPassword,
@@ -77,6 +78,19 @@ class _MainTabScreenState extends ConsumerState<MainTabScreen> {
   void initState() {
     super.initState();
     _seedLibrary();
+    _restoreDarkMode();
+  }
+
+  Future<void> _restoreDarkMode() async {
+    final stored = await ref.read(settingsServiceProvider).loadDarkMode();
+    if (stored != null && mounted) {
+      setState(() => _darkMode = stored);
+    }
+  }
+
+  void _setDarkMode(bool value) {
+    setState(() => _darkMode = value);
+    ref.read(settingsServiceProvider).saveDarkMode(value);
   }
 
   void _seedLibrary() {
@@ -103,11 +117,13 @@ class _MainTabScreenState extends ConsumerState<MainTabScreen> {
     }
   }
 
-  Future<AppUser> _updateProfile(String realName) async {
+  Future<AppUser> _updateProfile({String? realName, String? bio}) async {
     final updater = widget.onUpdateProfile;
+    final trimmedName = realName?.trim();
+    final trimmedBio = bio?.trim();
     final updated = updater == null
-        ? _user.copyWith(realName: realName.trim())
-        : await updater(realName.trim());
+        ? _user.copyWith(realName: trimmedName, bio: trimmedBio)
+        : await updater(realName: trimmedName, bio: trimmedBio);
     if (mounted) {
       setState(() => _user = updated);
     }
@@ -311,8 +327,7 @@ class _MainTabScreenState extends ConsumerState<MainTabScreen> {
                                   onUpdateProfile: _updateProfile,
                                   onChangePassword: _changePassword,
                                   darkMode: _darkMode,
-                                  onDarkModeChanged: (value) =>
-                                      setState(() => _darkMode = value),
+                                  onDarkModeChanged: _setDarkMode,
                                 ),
                               ],
                             ),

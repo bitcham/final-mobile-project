@@ -103,7 +103,7 @@ class AuthController extends AsyncNotifier<AuthState> {
     _bumpRouter();
   }
 
-  Future<AppUser> updateProfile({required String realName}) async {
+  Future<AppUser> updateProfile({String? realName, String? bio}) async {
     final authState = state.value;
     if (authState is! Authenticated) {
       throw StateError('A signed-in user is required to update the profile.');
@@ -113,6 +113,7 @@ class AuthController extends AsyncNotifier<AuthState> {
     final updated = await repo.updateProfile(
       user: authState.user,
       realName: realName,
+      bio: bio,
     );
     state = AsyncData<AuthState>(Authenticated(updated));
     _bumpRouter();

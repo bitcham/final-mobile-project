@@ -20,7 +20,7 @@ class CinerateLogo extends StatelessWidget {
         fontFamily: 'Inter',
         fontSize: fontSize,
         fontWeight: FontWeight.w900,
-        color: CinerateColors.primary,
+        color: CineratePalette.brand,
         letterSpacing: 4,
       ),
     );

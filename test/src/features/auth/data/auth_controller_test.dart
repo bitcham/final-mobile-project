@@ -127,8 +127,9 @@ class _FakeAuthRepository implements AuthRepository {
   @override
   Future<AppUser> updateProfile({
     required AppUser user,
-    required String realName,
-  }) async => user.copyWith(realName: realName);
+    String? realName,
+    String? bio,
+  }) async => user.copyWith(realName: realName, bio: bio);
 }
 
 class _FakeSessionService implements SessionService {

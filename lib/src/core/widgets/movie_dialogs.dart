@@ -3,7 +3,7 @@ import 'dart:ui';
 import 'package:flutter/cupertino.dart';
 
 import '../models/movie_view.dart';
-import '../theme/cinerate_palette.dart';
+import '../theme/app_theme.dart';
 
 /// Sentinel returned by [showOptionSheet] when the sheet is dismissed.
 const Object kNoSelection = Object();

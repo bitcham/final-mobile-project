@@ -26,7 +26,7 @@ class _SettingsTab extends StatefulWidget {
 }
 
 class _SettingsTabState extends State<_SettingsTab> {
-  String _bio = _defaultProfileBio;
+  String get _bio => widget.user.bio ?? _defaultProfileBio;
 
   @override
   Widget build(BuildContext context) {
@@ -128,7 +128,7 @@ class _SettingsTabState extends State<_SettingsTab> {
                   setDialogState(() => errorText = 'Name is required');
                   return;
                 }
-                await widget.onUpdateProfile(name);
+                await widget.onUpdateProfile(realName: name);
                 if (dialogContext.mounted) {
                   Navigator.of(dialogContext).pop();
                 }
@@ -177,14 +177,16 @@ class _SettingsTabState extends State<_SettingsTab> {
               child: const Text('Cancel'),
             ),
             CupertinoDialogAction(
-              onPressed: () {
+              onPressed: () async {
                 final bio = controller.text.trim();
                 if (bio.isEmpty) {
                   setDialogState(() => errorText = 'Bio is required');
                   return;
                 }
-                setState(() => _bio = bio);
-                Navigator.of(dialogContext).pop();
+                await widget.onUpdateProfile(bio: bio);
+                if (dialogContext.mounted) {
+                  Navigator.of(dialogContext).pop();
+                }
               },
               child: const Text('Save'),
             ),

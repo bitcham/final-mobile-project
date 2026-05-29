@@ -38,9 +38,9 @@ class WelcomeScreen extends ConsumerWidget {
     return MainTabScreen(
       user: user,
       onLogout: () => ref.read(authControllerProvider.notifier).logout(),
-      onUpdateProfile: (realName) => ref
+      onUpdateProfile: ({realName, bio}) => ref
           .read(authControllerProvider.notifier)
-          .updateProfile(realName: realName),
+          .updateProfile(realName: realName, bio: bio),
       onChangePassword: ({required currentPassword, required newPassword}) =>
           ref
               .read(authControllerProvider.notifier)

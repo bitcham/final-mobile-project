@@ -4,7 +4,6 @@ import 'package:flutter/cupertino.dart';
 
 import '../models/movie_view.dart';
 import '../theme/app_theme.dart';
-import '../theme/cinerate_palette.dart';
 import 'movie_dialogs.dart';
 
 class LiquidGlassPane extends StatelessWidget {
@@ -367,7 +366,7 @@ class RatingBadge extends StatelessWidget {
               fontSize: 12,
               height: 1.0,
               fontWeight: FontWeight.w800,
-              color: CinerateColors.textPrimary,
+              color: CupertinoColors.white,
             ),
           ),
         ],

@@ -8,15 +8,15 @@ class SplashScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const CupertinoPageScaffold(
-      backgroundColor: CinerateColors.background,
-      child: Center(
+    return CupertinoPageScaffold(
+      backgroundColor: context.cineratePalette.background,
+      child: const Center(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             CinerateLogo(fontSize: 32),
             SizedBox(height: 24),
-            CupertinoActivityIndicator(color: CinerateColors.primary),
+            CupertinoActivityIndicator(color: CineratePalette.brand),
           ],
         ),
       ),

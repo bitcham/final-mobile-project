@@ -1,6 +1,7 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:movie_rating/src/core/models/movie_view.dart';
 import 'package:movie_rating/src/features/auth/models/app_user.dart';
 import 'package:movie_rating/src/features/main/presentation/main_tab_screen.dart';
@@ -18,6 +19,10 @@ const _testUser = AppUser(
 );
 
 void main() {
+  setUp(() {
+    SharedPreferences.setMockInitialValues({});
+  });
+
   tearDown(() {
     TestWidgetsFlutterBinding.instance.platformDispatcher.views.single
       ..resetPhysicalSize()

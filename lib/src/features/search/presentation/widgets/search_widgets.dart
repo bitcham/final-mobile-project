@@ -1,6 +1,6 @@
 import 'package:flutter/cupertino.dart';
 import 'package:movie_rating/src/core/models/movie_view.dart';
-import 'package:movie_rating/src/core/theme/cinerate_palette.dart';
+import 'package:movie_rating/src/core/theme/app_theme.dart';
 import 'package:movie_rating/src/core/widgets/movie_dialogs.dart';
 import 'package:movie_rating/src/core/widgets/movie_widgets.dart';
 
