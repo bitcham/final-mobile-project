@@ -231,8 +231,9 @@ class SearchResultTile extends StatelessWidget {
       minimumSize: Size.zero,
       onPressed: () => _openDetails(context),
       child: SizedBox(
-        height: 148,
+        height: 174,
         child: Row(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             PosterTile(
               movie: movie,
@@ -254,40 +255,50 @@ class SearchResultTile extends StatelessWidget {
                     ? 0.58
                     : 0.88,
                 shadowOpacity: 0.06,
-                child: SizedBox(
-                  height: 116,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        movie.title,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          fontFamily: 'Inter',
-                          fontSize: 17,
-                          height: 1.05,
-                          fontWeight: FontWeight.w900,
-                          color: palette.textPrimary,
+                child: LayoutBuilder(
+                  builder: (context, constraints) {
+                    final titleStyle = TextStyle(
+                      fontFamily: 'Inter',
+                      fontSize: 17,
+                      height: 1.05,
+                      fontWeight: FontWeight.w900,
+                      color: palette.textPrimary,
+                    );
+                    final painter = TextPainter(
+                      text: TextSpan(text: movie.title, style: titleStyle),
+                      textDirection: TextDirection.ltr,
+                    )..layout(maxWidth: constraints.maxWidth);
+                    final titleWraps =
+                        painter.computeLineMetrics().length > 1;
+                    painter.dispose();
+                    final synopsisMaxLines = titleWraps ? 3 : 4;
+
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          movie.title,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: titleStyle,
                         ),
-                      ),
-                      const SizedBox(height: 7),
-                      Text(
-                        '${movie.year} • ${movie.rating.toStringAsFixed(1)} ★',
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          fontFamily: 'Inter',
-                          fontSize: 10,
-                          fontWeight: FontWeight.w800,
-                          color: palette.primary,
+                        const SizedBox(height: 7),
+                        Text(
+                          '${movie.year} • ${movie.rating.toStringAsFixed(1)} ★',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontFamily: 'Inter',
+                            fontSize: 10,
+                            fontWeight: FontWeight.w800,
+                            color: palette.primary,
+                          ),
                         ),
-                      ),
-                      const SizedBox(height: 8),
-                      Expanded(
-                        child: Text(
+                        const SizedBox(height: 8),
+                        Text(
                           movie.synopsis,
-                          maxLines: 3,
+                          maxLines: synopsisMaxLines,
                           overflow: TextOverflow.ellipsis,
                           style: TextStyle(
                             fontFamily: 'Inter',
@@ -297,17 +308,18 @@ class SearchResultTile extends StatelessWidget {
                             color: palette.textSecondary,
                           ),
                         ),
-                      ),
-                      Wrap(
-                        spacing: 6,
-                        runSpacing: 6,
-                        children: movie.genres
-                            .take(3)
-                            .map(TinyGenrePill.new)
-                            .toList(),
-                      ),
-                    ],
-                  ),
+                        const Spacer(),
+                        Wrap(
+                          spacing: 6,
+                          runSpacing: 6,
+                          children: movie.genres
+                              .take(3)
+                              .map(TinyGenrePill.new)
+                              .toList(),
+                        ),
+                      ],
+                    );
+                  },
                 ),
               ),
             ),

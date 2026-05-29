@@ -191,7 +191,7 @@ class _RegisterProfileScreenState extends ConsumerState<RegisterProfileScreen> {
               SizedBox(height: compact ? 8 : 18),
               CinerateAuthField(
                 controller: _nameController,
-                placeholder: 'real name',
+                placeholder: 'username',
                 icon: CupertinoIcons.person,
                 textCapitalization: TextCapitalization.words,
                 textInputAction: TextInputAction.done,

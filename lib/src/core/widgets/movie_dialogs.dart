@@ -666,39 +666,48 @@ class _MovieDetailsSheet extends StatelessWidget {
                               ),
                             ],
                             const SizedBox(height: 18),
-                            Wrap(
-                              spacing: 10,
-                              runSpacing: 10,
+                            Row(
                               children: [
-                                if (canOpenTrailer)
-                                  _PreviewActionButton(
-                                    key: ValueKey(
-                                      'movie-preview-trailer-${movie.title}',
+                                if (canOpenTrailer) ...[
+                                  Expanded(
+                                    flex: 2,
+                                    child: _PreviewActionButton(
+                                      key: ValueKey(
+                                        'movie-preview-trailer-${movie.title}',
+                                      ),
+                                      label: 'Watch Trailer',
+                                      icon: CupertinoIcons.play_fill,
+                                      prominent: true,
+                                      onPressed: onOpenTrailer,
                                     ),
-                                    label: 'Watch Trailer',
-                                    icon: CupertinoIcons.play_fill,
-                                    prominent: true,
-                                    onPressed: onOpenTrailer,
                                   ),
-                                _PreviewActionButton(
-                                  key: ValueKey(
-                                    'movie-preview-rate-${movie.title}',
+                                  const SizedBox(width: 10),
+                                ],
+                                Expanded(
+                                  child: _PreviewActionButton(
+                                    key: ValueKey(
+                                      'movie-preview-rate-${movie.title}',
+                                    ),
+                                    label: 'Rate',
+                                    icon: CupertinoIcons.star_fill,
+                                    onPressed: onRate,
                                   ),
-                                  label: 'Rate',
-                                  icon: CupertinoIcons.star_fill,
-                                  onPressed: onRate,
                                 ),
-                                if (onToggleWatchlist != null)
-                                  _PreviewActionButton(
-                                    key: ValueKey(
-                                      'movie-preview-watchlist-${movie.title}',
+                                if (onToggleWatchlist != null) ...[
+                                  const SizedBox(width: 10),
+                                  Expanded(
+                                    child: _PreviewActionButton(
+                                      key: ValueKey(
+                                        'movie-preview-watchlist-${movie.title}',
+                                      ),
+                                      label: inWatchlist ? 'Liked' : 'Like',
+                                      icon: inWatchlist
+                                          ? CupertinoIcons.heart_fill
+                                          : CupertinoIcons.heart,
+                                      onPressed: onToggleWatchlist!,
                                     ),
-                                    label: inWatchlist ? 'Liked' : 'Like',
-                                    icon: inWatchlist
-                                        ? CupertinoIcons.heart_fill
-                                        : CupertinoIcons.heart,
-                                    onPressed: onToggleWatchlist!,
                                   ),
+                                ],
                               ],
                             ),
                           ],
@@ -908,46 +917,42 @@ class _PreviewActionButton extends StatelessWidget {
     final palette = context.cineratePalette;
     final background = prominent ? palette.primary : palette.surfaceAlt;
     final foreground = prominent ? CupertinoColors.white : palette.textPrimary;
-    return ConstrainedBox(
-      constraints: const BoxConstraints(minWidth: 132),
-      child: CupertinoButton(
-        padding: EdgeInsets.zero,
-        minimumSize: const Size(44, 44),
-        borderRadius: BorderRadius.circular(18),
-        onPressed: onPressed,
-        child: DecoratedBox(
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(18),
-            color: background,
-            border: Border.all(
-              color: prominent
-                  ? CupertinoColors.white.withValues(alpha: 0.16)
-                  : palette.tagBackground,
-            ),
+    return CupertinoButton(
+      padding: EdgeInsets.zero,
+      minimumSize: const Size(44, 44),
+      borderRadius: BorderRadius.circular(18),
+      onPressed: onPressed,
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(18),
+          color: background,
+          border: Border.all(
+            color: prominent
+                ? CupertinoColors.white.withValues(alpha: 0.16)
+                : palette.tagBackground,
           ),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(icon, size: 17, color: foreground),
-                const SizedBox(width: 7),
-                Flexible(
-                  child: Text(
-                    label,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      fontFamily: 'Inter',
-                      fontSize: 13,
-                      fontWeight: FontWeight.w800,
-                      color: foreground,
-                    ),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(icon, size: 17, color: foreground),
+              const SizedBox(width: 7),
+              Flexible(
+                child: Text(
+                  label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontFamily: 'Inter',
+                    fontSize: 13,
+                    fontWeight: FontWeight.w800,
+                    color: foreground,
                   ),
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
       ),

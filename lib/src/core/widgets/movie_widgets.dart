@@ -111,8 +111,8 @@ class PosterTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final width = searchSize ? 86.0 : (large ? 112.0 : double.infinity);
-    final height = searchSize ? 140.0 : (large ? 174.0 : double.infinity);
+    final width = searchSize ? 116.0 : (large ? 112.0 : double.infinity);
+    final height = searchSize ? 174.0 : (large ? 174.0 : double.infinity);
     final tile = SizedBox(
       width: width,
       height: height,
@@ -229,9 +229,12 @@ class _MoviePosterFrame extends StatelessWidget {
                     ),
                   ),
                   Positioned(
-                    left: 8,
+                    left: 0,
+                    right: 0,
                     bottom: 8,
-                    child: RatingBadge(rating: movie.rating),
+                    child: Center(
+                      child: RatingBadge(rating: movie.rating),
+                    ),
                   ),
                 ],
               ),
@@ -349,6 +352,7 @@ class RatingBadge extends StatelessWidget {
       shadowOpacity: 0.10,
       child: Row(
         mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           const Icon(
             CupertinoIcons.star_fill,
@@ -361,6 +365,7 @@ class RatingBadge extends StatelessWidget {
             style: const TextStyle(
               fontFamily: 'Inter',
               fontSize: 12,
+              height: 1.0,
               fontWeight: FontWeight.w800,
               color: CinerateColors.textPrimary,
             ),
