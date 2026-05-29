@@ -231,9 +231,7 @@ class _MoviePosterFrame extends StatelessWidget {
                     left: 0,
                     right: 0,
                     bottom: 8,
-                    child: Center(
-                      child: RatingBadge(rating: movie.rating),
-                    ),
+                    child: Center(child: RatingBadge(rating: movie.rating)),
                   ),
                 ],
               ),

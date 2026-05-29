@@ -10,7 +10,6 @@ Future<void> main() async {
     await dotenv.load(fileName: '.env');
   } catch (_) {
     // Missing .env is non-fatal: search surfaces a friendly message until
-    // TheMovieDB keys are provided.
   }
   runApp(const ProviderScope(child: CinerateApp()));
 }

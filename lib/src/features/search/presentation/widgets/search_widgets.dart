@@ -268,8 +268,7 @@ class SearchResultTile extends StatelessWidget {
                       text: TextSpan(text: movie.title, style: titleStyle),
                       textDirection: TextDirection.ltr,
                     )..layout(maxWidth: constraints.maxWidth);
-                    final titleWraps =
-                        painter.computeLineMetrics().length > 1;
+                    final titleWraps = painter.computeLineMetrics().length > 1;
                     painter.dispose();
                     final synopsisMaxLines = titleWraps ? 3 : 4;
 
