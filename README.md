@@ -17,8 +17,8 @@ bundled set of "picks" so the UI still works offline.
 
 > Add your screenshots as PNG files in `docs/screenshots/` and they will render here.
 
-| Home | Search | Settings |
-|------|--------|----------|
+| Home | Detail | Search | Watchlist | Settings |
+|------|--------|----------|----------|----------|
 | ![Home screen](docs/screenshots/home_screen.png) | ![Detail screen](docs/screenshots/detail_screen.png) | ![Search screen](docs/screenshots/search_screen.png) | ![Watchlist screen](docs/screenshots/watchlist_screen.png) | ![Settings screen](docs/screenshots/settings_screen.png) |
 
 ## Requirements
