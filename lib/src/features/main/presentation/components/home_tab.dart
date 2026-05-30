@@ -1,5 +1,32 @@
 part of '../main_tab_screen.dart';
 
+enum _HomeCategoryFilter {
+  all('All', null),
+  superhero('Superhero', 'SUPERHERO'),
+  action('Action', 'ACTION'),
+  comedy('Comedy', 'COMEDY'),
+  adventure('Adventure', 'ADVENTURE'),
+  drama('Drama', 'DRAMA'),
+  sciFi('Sci-Fi', 'SCI-FI');
+
+  const _HomeCategoryFilter(this.label, this.genre);
+
+  final String label;
+  final String? genre;
+
+  bool get isActive => this != _HomeCategoryFilter.all;
+
+  List<MovieView> apply(List<MovieView> movies) {
+    final genre = this.genre;
+    if (genre == null) {
+      return movies;
+    }
+    return movies
+        .where((movie) => movie.genres.contains(genre))
+        .toList(growable: false);
+  }
+}
+
 class _HomeTab extends StatefulWidget {
   const _HomeTab({
     required this.user,
@@ -8,13 +35,12 @@ class _HomeTab extends StatefulWidget {
     required this.movieFeedStatusIsLoading,
     required this.userRatings,
     required this.watchlistMovieTitles,
-    required this.onOpenSearch,
-    required this.onOpenSettings,
-    required this.onOpenWatchlist,
+    required this.onOpenProfile,
     required this.onRefreshMovies,
     required this.onOpenTrailer,
     required this.onRateMovie,
     required this.onToggleWatchlist,
+    required this.resolveMovieDetails,
   });
 
   final AppUser user;
@@ -23,13 +49,12 @@ class _HomeTab extends StatefulWidget {
   final bool movieFeedStatusIsLoading;
   final Map<String, double> userRatings;
   final Set<String> watchlistMovieTitles;
-  final VoidCallback onOpenSearch;
-  final VoidCallback onOpenSettings;
-  final VoidCallback onOpenWatchlist;
+  final VoidCallback onOpenProfile;
   final VoidCallback onRefreshMovies;
   final Future<void> Function(MovieView movie) onOpenTrailer;
   final void Function(MovieView movie, double rating) onRateMovie;
   final void Function(MovieView movie) onToggleWatchlist;
+  final Future<MovieView> Function(MovieView movie) resolveMovieDetails;
 
   @override
   State<_HomeTab> createState() => _HomeTabState();
@@ -38,6 +63,7 @@ class _HomeTab extends StatefulWidget {
 class _HomeTabState extends State<_HomeTab> {
   final PageController _showcaseController = PageController();
   int _showcaseIndex = 0;
+  _HomeCategoryFilter _categoryFilter = _HomeCategoryFilter.all;
 
   @override
   void dispose() {
@@ -56,6 +82,16 @@ class _HomeTabState extends State<_HomeTab> {
   @override
   Widget build(BuildContext context) {
     final movies = widget.movieCollections;
+    final latestMovies = _categoryFilter.apply(movies.latest);
+    final trendingMovies = _categoryFilter.apply(movies.trending);
+    final topRatedMovies = _categoryFilter.apply(movies.topRated);
+    final actionMovies = _categoryFilter.apply(movies.action);
+    final rewatchMovies = _categoryFilter.apply(movies.rewatch);
+    final heroSource = latestMovies.isNotEmpty ? latestMovies : trendingMovies;
+    final heroMovies = heroSource.take(5).toList(growable: false);
+    final heroIndex = heroMovies.isEmpty
+        ? 0
+        : math.min(_showcaseIndex, heroMovies.length - 1);
     return LayoutBuilder(
       builder: (context, constraints) {
         final isWide = constraints.maxWidth >= 700;
@@ -68,19 +104,28 @@ class _HomeTabState extends State<_HomeTab> {
               child: _HeroShowcase(
                 height: heroHeight,
                 user: widget.user,
-                movies: movies.latest,
+                movies: heroMovies,
                 controller: _showcaseController,
-                currentIndex: _showcaseIndex,
+                currentIndex: heroIndex,
                 onPageChanged: (index) =>
                     setState(() => _showcaseIndex = index),
+                currentFilter: _categoryFilter,
+                onSelectFilter: (filter) {
+                  setState(() {
+                    _categoryFilter = filter;
+                    _showcaseIndex = 0;
+                  });
+                  if (_showcaseController.hasClients) {
+                    _showcaseController.jumpToPage(0);
+                  }
+                },
                 userRatingFor: _userRatingFor,
                 isInWatchlist: _isInWatchlist,
-                onOpenSearch: widget.onOpenSearch,
-                onOpenSettings: widget.onOpenSettings,
-                onOpenWatchlist: widget.onOpenWatchlist,
+                onOpenProfile: widget.onOpenProfile,
                 onOpenTrailer: widget.onOpenTrailer,
                 onRateMovie: widget.onRateMovie,
                 onToggleWatchlist: widget.onToggleWatchlist,
+                resolveMovieDetails: widget.resolveMovieDetails,
               ),
             ),
             if (widget.movieFeedStatus != null)
@@ -91,60 +136,85 @@ class _HomeTabState extends State<_HomeTab> {
                   onRefresh: widget.onRefreshMovies,
                 ),
               ),
+            if (_categoryFilter.isActive)
+              SliverToBoxAdapter(
+                child: _HomeFilterBanner(
+                  filter: _categoryFilter,
+                  onClear: () {
+                    setState(() {
+                      _categoryFilter = _HomeCategoryFilter.all;
+                      _showcaseIndex = 0;
+                    });
+                    if (_showcaseController.hasClients) {
+                      _showcaseController.jumpToPage(0);
+                    }
+                  },
+                ),
+              ),
             SliverToBoxAdapter(
               child: _MovieShelf(
-                title: 'Trending Now',
+                title: _categoryFilter.isActive
+                    ? '${_categoryFilter.label} Picks'
+                    : 'Trending Now',
                 actionLabel: 'SEE ALL',
-                movies: movies.trending,
+                movies: trendingMovies,
                 keyPrefix: 'trending',
                 userRatingFor: _userRatingFor,
                 isInWatchlist: _isInWatchlist,
                 onActionPressed: () =>
-                    _showTrendingDialog(context, movies.trending),
+                    _showTrendingDialog(context, trendingMovies),
                 onOpenTrailer: widget.onOpenTrailer,
                 onRateMovie: widget.onRateMovie,
                 onToggleWatchlist: widget.onToggleWatchlist,
+                resolveMovieDetails: widget.resolveMovieDetails,
               ),
             ),
             SliverToBoxAdapter(
               child: _MovieShelf(
                 title: 'Top Rated',
-                movies: movies.topRated,
+                movies: topRatedMovies,
                 keyPrefix: 'top-rated',
                 userRatingFor: _userRatingFor,
                 isInWatchlist: _isInWatchlist,
                 onOpenTrailer: widget.onOpenTrailer,
                 onRateMovie: widget.onRateMovie,
                 onToggleWatchlist: widget.onToggleWatchlist,
+                resolveMovieDetails: widget.resolveMovieDetails,
               ),
             ),
-            SliverToBoxAdapter(
-              child: _MovieShelf(
-                title: 'Action Picks',
-                movies: movies.action,
-                keyPrefix: 'action',
-                userRatingFor: _userRatingFor,
-                isInWatchlist: _isInWatchlist,
-                onOpenTrailer: widget.onOpenTrailer,
-                onRateMovie: widget.onRateMovie,
-                onToggleWatchlist: widget.onToggleWatchlist,
-              ),
-            ),
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.only(bottom: 34),
+            if (!_categoryFilter.isActive)
+              SliverToBoxAdapter(
                 child: _MovieShelf(
-                  title: 'Rewatch Classics',
-                  movies: movies.rewatch,
-                  keyPrefix: 'rewatch',
+                  title: 'Action Picks',
+                  movies: actionMovies,
+                  keyPrefix: 'action',
                   userRatingFor: _userRatingFor,
                   isInWatchlist: _isInWatchlist,
                   onOpenTrailer: widget.onOpenTrailer,
                   onRateMovie: widget.onRateMovie,
                   onToggleWatchlist: widget.onToggleWatchlist,
+                  resolveMovieDetails: widget.resolveMovieDetails,
                 ),
               ),
-            ),
+            if (!_categoryFilter.isActive)
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.only(bottom: 34),
+                  child: _MovieShelf(
+                    title: 'Rewatch Classics',
+                    movies: rewatchMovies,
+                    keyPrefix: 'rewatch',
+                    userRatingFor: _userRatingFor,
+                    isInWatchlist: _isInWatchlist,
+                    onOpenTrailer: widget.onOpenTrailer,
+                    onRateMovie: widget.onRateMovie,
+                    onToggleWatchlist: widget.onToggleWatchlist,
+                    resolveMovieDetails: widget.resolveMovieDetails,
+                  ),
+                ),
+              ),
+            if (_categoryFilter.isActive)
+              const SliverToBoxAdapter(child: SizedBox(height: 34)),
           ],
         );
       },
@@ -214,6 +284,66 @@ class _MovieFeedStatusBanner extends StatelessWidget {
   }
 }
 
+class _HomeFilterBanner extends StatelessWidget {
+  const _HomeFilterBanner({required this.filter, required this.onClear});
+
+  final _HomeCategoryFilter filter;
+  final VoidCallback onClear;
+
+  @override
+  Widget build(BuildContext context) {
+    final palette = context.cineratePalette;
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(22, 18, 22, 0),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(18),
+          color: palette.surface,
+          border: Border.all(color: palette.tagBackground),
+        ),
+        child: Row(
+          children: [
+            Icon(
+              CupertinoIcons.slider_horizontal_3,
+              size: 17,
+              color: palette.primary,
+            ),
+            const SizedBox(width: 9),
+            Expanded(
+              child: Text(
+                'Showing ${filter.label}',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontFamily: 'Inter',
+                  fontSize: 13,
+                  fontWeight: FontWeight.w800,
+                  color: palette.textPrimary,
+                ),
+              ),
+            ),
+            CupertinoButton(
+              padding: EdgeInsets.zero,
+              minimumSize: const Size(44, 28),
+              onPressed: onClear,
+              child: Text(
+                'Clear',
+                style: TextStyle(
+                  fontFamily: 'Inter',
+                  fontSize: 12,
+                  fontWeight: FontWeight.w900,
+                  color: palette.primary,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 class _HeroShowcase extends StatelessWidget {
   const _HeroShowcase({
     required this.height,
@@ -222,14 +352,15 @@ class _HeroShowcase extends StatelessWidget {
     required this.controller,
     required this.currentIndex,
     required this.onPageChanged,
+    required this.currentFilter,
+    required this.onSelectFilter,
     required this.userRatingFor,
     required this.isInWatchlist,
-    required this.onOpenSearch,
-    required this.onOpenSettings,
-    required this.onOpenWatchlist,
+    required this.onOpenProfile,
     required this.onOpenTrailer,
     required this.onRateMovie,
     required this.onToggleWatchlist,
+    required this.resolveMovieDetails,
   });
 
   final double height;
@@ -238,14 +369,15 @@ class _HeroShowcase extends StatelessWidget {
   final PageController controller;
   final int currentIndex;
   final ValueChanged<int> onPageChanged;
+  final _HomeCategoryFilter currentFilter;
+  final ValueChanged<_HomeCategoryFilter> onSelectFilter;
   final double? Function(MovieView movie) userRatingFor;
   final bool Function(MovieView movie) isInWatchlist;
-  final VoidCallback onOpenSearch;
-  final VoidCallback onOpenSettings;
-  final VoidCallback onOpenWatchlist;
+  final VoidCallback onOpenProfile;
   final Future<void> Function(MovieView movie) onOpenTrailer;
   final void Function(MovieView movie, double rating) onRateMovie;
   final void Function(MovieView movie) onToggleWatchlist;
+  final Future<MovieView> Function(MovieView movie) resolveMovieDetails;
 
   @override
   Widget build(BuildContext context) {
@@ -268,6 +400,7 @@ class _HeroShowcase extends StatelessWidget {
                 onOpenTrailer: onOpenTrailer,
                 onRateMovie: onRateMovie,
                 onToggleWatchlist: onToggleWatchlist,
+                resolveMovieDetails: resolveMovieDetails,
               );
             },
           ),
@@ -281,9 +414,9 @@ class _HeroShowcase extends StatelessWidget {
                 padding: const EdgeInsets.fromLTRB(18, 10, 18, 0),
                 child: _HomeHeader(
                   user: user,
-                  onOpenSearch: onOpenSearch,
-                  onOpenSettings: onOpenSettings,
-                  onOpenWatchlist: onOpenWatchlist,
+                  currentFilter: currentFilter,
+                  onSelectFilter: onSelectFilter,
+                  onOpenProfile: onOpenProfile,
                 ),
               ),
             ),
@@ -309,6 +442,7 @@ class _HeroShowcasePage extends StatelessWidget {
     required this.onOpenTrailer,
     required this.onRateMovie,
     required this.onToggleWatchlist,
+    required this.resolveMovieDetails,
   });
 
   final MovieView movie;
@@ -318,6 +452,7 @@ class _HeroShowcasePage extends StatelessWidget {
   final Future<void> Function(MovieView movie) onOpenTrailer;
   final void Function(MovieView movie, double rating) onRateMovie;
   final void Function(MovieView movie) onToggleWatchlist;
+  final Future<MovieView> Function(MovieView movie) resolveMovieDetails;
 
   @override
   Widget build(BuildContext context) {
@@ -372,6 +507,7 @@ class _HeroShowcasePage extends StatelessWidget {
                                   onOpenTrailer: onOpenTrailer,
                                   onRateMovie: onRateMovie,
                                   onToggleWatchlist: onToggleWatchlist,
+                                  resolveMovieDetails: resolveMovieDetails,
                                 ),
                                 SizedBox(width: compact ? 14 : 18),
                                 Expanded(
@@ -511,29 +647,29 @@ class _HeroShowcasePage extends StatelessWidget {
 class _HomeHeader extends StatelessWidget {
   const _HomeHeader({
     required this.user,
-    required this.onOpenSearch,
-    required this.onOpenSettings,
-    required this.onOpenWatchlist,
+    required this.currentFilter,
+    required this.onSelectFilter,
+    required this.onOpenProfile,
   });
 
   final AppUser user;
-  final VoidCallback onOpenSearch;
-  final VoidCallback onOpenSettings;
-  final VoidCallback onOpenWatchlist;
+  final _HomeCategoryFilter currentFilter;
+  final ValueChanged<_HomeCategoryFilter> onSelectFilter;
+  final VoidCallback onOpenProfile;
 
   @override
   Widget build(BuildContext context) {
     return Row(
       children: [
         CupertinoButton(
+          key: const ValueKey('home-quick-menu'),
           padding: EdgeInsets.zero,
           minimumSize: const Size(38, 38),
           borderRadius: BorderRadius.circular(19),
           onPressed: () => _showHomeMenu(
             context,
-            onOpenSearch: onOpenSearch,
-            onOpenSettings: onOpenSettings,
-            onOpenWatchlist: onOpenWatchlist,
+            currentFilter: currentFilter,
+            onSelectFilter: onSelectFilter,
           ),
           child: const LiquidGlassPane(
             borderRadius: 19,
@@ -552,9 +688,10 @@ class _HomeHeader extends StatelessWidget {
         ),
         const Expanded(child: Center(child: CinerateLogo(fontSize: 21))),
         ProfileAvatar(
+          key: const ValueKey('home-profile-avatar'),
           imagePath: user.profileImagePath,
           size: 38,
-          onTap: onOpenSettings,
+          onTap: onOpenProfile,
         ),
       ],
     );
@@ -574,6 +711,7 @@ class _ShowcaseDots extends StatelessWidget {
       children: [
         for (var dotIndex = 0; dotIndex < count; dotIndex++) ...[
           AnimatedContainer(
+            key: ValueKey('showcase-dot-$dotIndex'),
             duration: const Duration(milliseconds: 220),
             width: index == dotIndex ? 22 : 6,
             height: 6,
@@ -601,6 +739,7 @@ class _MovieShelf extends StatelessWidget {
     required this.onOpenTrailer,
     required this.onRateMovie,
     required this.onToggleWatchlist,
+    required this.resolveMovieDetails,
     this.actionLabel,
     this.onActionPressed,
   });
@@ -615,6 +754,7 @@ class _MovieShelf extends StatelessWidget {
   final Future<void> Function(MovieView movie) onOpenTrailer;
   final void Function(MovieView movie, double rating) onRateMovie;
   final void Function(MovieView movie) onToggleWatchlist;
+  final Future<MovieView> Function(MovieView movie) resolveMovieDetails;
 
   @override
   Widget build(BuildContext context) {
@@ -678,6 +818,7 @@ class _MovieShelf extends StatelessWidget {
                   onOpenTrailer: onOpenTrailer,
                   onRateMovie: onRateMovie,
                   onToggleWatchlist: onToggleWatchlist,
+                  resolveMovieDetails: resolveMovieDetails,
                 );
               },
             ),
@@ -698,6 +839,7 @@ class _ShelfMovieTile extends StatelessWidget {
     required this.onOpenTrailer,
     required this.onRateMovie,
     required this.onToggleWatchlist,
+    required this.resolveMovieDetails,
     this.rank,
   });
 
@@ -710,6 +852,7 @@ class _ShelfMovieTile extends StatelessWidget {
   final Future<void> Function(MovieView movie) onOpenTrailer;
   final void Function(MovieView movie, double rating) onRateMovie;
   final void Function(MovieView movie) onToggleWatchlist;
+  final Future<MovieView> Function(MovieView movie) resolveMovieDetails;
 
   @override
   Widget build(BuildContext context) {
@@ -734,6 +877,7 @@ class _ShelfMovieTile extends StatelessWidget {
                   onOpenTrailer: onOpenTrailer,
                   onRateMovie: onRateMovie,
                   onToggleWatchlist: onToggleWatchlist,
+                  resolveMovieDetails: resolveMovieDetails,
                 ),
               ),
               if (rank != null)

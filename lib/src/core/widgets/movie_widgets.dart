@@ -95,6 +95,7 @@ class PosterTile extends StatelessWidget {
     this.searchSize = false,
     this.inWatchlist = false,
     this.onToggleWatchlist,
+    this.resolveMovieDetails,
   });
 
   final MovieView movie;
@@ -107,6 +108,7 @@ class PosterTile extends StatelessWidget {
   final bool searchSize;
   final bool inWatchlist;
   final void Function(MovieView movie)? onToggleWatchlist;
+  final Future<MovieView> Function(MovieView movie)? resolveMovieDetails;
 
   @override
   Widget build(BuildContext context) {
@@ -138,6 +140,8 @@ class PosterTile extends StatelessWidget {
             onRateMovie: onRateMovie,
             inWatchlist: inWatchlist,
             onToggleWatchlist: onToggleWatchlist,
+            heroTag: heroTag,
+            resolveMovieDetails: resolveMovieDetails,
           ),
       child: tile,
     );

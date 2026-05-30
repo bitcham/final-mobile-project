@@ -81,37 +81,25 @@ Future<void> _showTrendingDialog(BuildContext context, List<MovieView> movies) {
 
 Future<void> _showHomeMenu(
   BuildContext context, {
-  required VoidCallback onOpenSearch,
-  required VoidCallback onOpenSettings,
-  required VoidCallback onOpenWatchlist,
+  required _HomeCategoryFilter currentFilter,
+  required ValueChanged<_HomeCategoryFilter> onSelectFilter,
 }) {
   return showCupertinoModalPopup<void>(
     context: context,
     useRootNavigator: false,
     builder: (context) => CupertinoActionSheet(
-      title: const Text('Quick menu'),
+      title: const Text('Filter homepage'),
       actions: [
-        CupertinoActionSheetAction(
-          onPressed: () {
-            Navigator.of(context).pop();
-            onOpenSearch();
-          },
-          child: const Text('Search'),
-        ),
-        CupertinoActionSheetAction(
-          onPressed: () {
-            Navigator.of(context).pop();
-            onOpenWatchlist();
-          },
-          child: const Text('Watchlist'),
-        ),
-        CupertinoActionSheetAction(
-          onPressed: () {
-            Navigator.of(context).pop();
-            onOpenSettings();
-          },
-          child: const Text('Settings'),
-        ),
+        for (final filter in _HomeCategoryFilter.values)
+          CupertinoActionSheetAction(
+            key: ValueKey('home-filter-${filter.name}'),
+            isDefaultAction: filter == currentFilter,
+            onPressed: () {
+              Navigator.of(context).pop();
+              onSelectFilter(filter);
+            },
+            child: Text(filter.label),
+          ),
       ],
       cancelButton: CupertinoActionSheetAction(
         onPressed: () => Navigator.of(context).pop(),

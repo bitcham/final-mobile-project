@@ -1,9 +1,8 @@
-import 'dart:ui';
-
 import 'package:flutter/cupertino.dart';
 
 import '../models/movie_view.dart';
 import '../theme/app_theme.dart';
+import 'movie_detail_screen.dart';
 
 /// Sentinel returned by [showOptionSheet] when the sheet is dismissed.
 const Object kNoSelection = Object();
@@ -438,555 +437,53 @@ Future<void> showMovieDetails(
   required void Function(MovieView movie, double rating) onRateMovie,
   bool inWatchlist = false,
   void Function(MovieView movie)? onToggleWatchlist,
+  Object? heroTag,
+  Future<MovieView> Function(MovieView movie)? resolveMovieDetails,
 }) {
-  final canOpenTrailer = movie.trailerUrl != null || movie.tmdbId != null;
-  return showCupertinoModalPopup<void>(
-    context: context,
-    useRootNavigator: false,
-    barrierColor: CupertinoColors.black.withValues(alpha: 0.48),
-    builder: (dialogContext) => _MovieDetailsSheet(
-      movie: movie,
-      userRating: userRating,
-      inWatchlist: inWatchlist,
-      canOpenTrailer: canOpenTrailer,
-      onClose: () => Navigator.of(dialogContext).pop(),
-      onOpenTrailer: () {
-        Navigator.of(dialogContext).pop();
-        onOpenTrailer(movie);
-      },
-      onRate: () async {
-        Navigator.of(dialogContext).pop();
-        if (!context.mounted) {
-          return;
-        }
-        final rating = await showRatingRangeSheet(
-          context,
-          initialRating: userRating ?? movie.rating,
-          title: 'Your Rating',
-          valueSuffix: ' ★',
-          applyLabel: 'Save rating',
-        );
-        if (rating != null) {
-          onRateMovie(movie, rating);
-        }
-      },
-      onToggleWatchlist: onToggleWatchlist == null
-          ? null
-          : () {
-              Navigator.of(dialogContext).pop();
-              onToggleWatchlist(movie);
+  return Navigator.of(context).push<void>(
+    PageRouteBuilder(
+      transitionDuration: const Duration(milliseconds: 420),
+      reverseTransitionDuration: const Duration(milliseconds: 300),
+      pageBuilder: (routeContext, animation, secondaryAnimation) =>
+          MovieDetailScreen(
+            movie: movie,
+            userRating: userRating,
+            inWatchlist: inWatchlist,
+            heroTag: heroTag,
+            onOpenTrailer: onOpenTrailer,
+            onToggleWatchlist: onToggleWatchlist,
+            resolveMovieDetails: resolveMovieDetails,
+            onRatePressed: (sheetContext, ratedMovie, initialRating) async {
+              final rating = await showRatingRangeSheet(
+                sheetContext,
+                initialRating: initialRating,
+                title: 'Your Rating',
+                valueSuffix: ' ★',
+                applyLabel: 'Save rating',
+              );
+              if (rating != null) {
+                onRateMovie(ratedMovie, rating);
+              }
+              return rating;
             },
+          ),
+      transitionsBuilder: (context, animation, secondaryAnimation, child) {
+        final curved = CurvedAnimation(
+          parent: animation,
+          curve: Curves.easeOutCubic,
+          reverseCurve: Curves.easeInCubic,
+        );
+        return FadeTransition(
+          opacity: curved,
+          child: SlideTransition(
+            position: Tween<Offset>(
+              begin: const Offset(0, 0.035),
+              end: Offset.zero,
+            ).animate(curved),
+            child: child,
+          ),
+        );
+      },
     ),
   );
-}
-
-class _MovieDetailsSheet extends StatelessWidget {
-  const _MovieDetailsSheet({
-    required this.movie,
-    required this.userRating,
-    required this.inWatchlist,
-    required this.canOpenTrailer,
-    required this.onClose,
-    required this.onOpenTrailer,
-    required this.onRate,
-    required this.onToggleWatchlist,
-  });
-
-  final MovieView movie;
-  final double? userRating;
-  final bool inWatchlist;
-  final bool canOpenTrailer;
-  final VoidCallback onClose;
-  final VoidCallback onOpenTrailer;
-  final VoidCallback onRate;
-  final VoidCallback? onToggleWatchlist;
-
-  @override
-  Widget build(BuildContext context) {
-    final palette = context.cineratePalette;
-    final size = MediaQuery.sizeOf(context);
-    final compact = size.width < 420;
-    final posterWidth = compact ? 78.0 : 94.0;
-    final posterHeight = compact ? 118.0 : 142.0;
-    final userRatingLabel = userRating == null
-        ? 'Not rated'
-        : '${userRating!.toStringAsFixed(1)} ★';
-
-    return SafeArea(
-      key: ValueKey('movie-preview-${movie.title}'),
-      top: true,
-      bottom: true,
-      child: Align(
-        alignment: Alignment.center,
-        child: Padding(
-          padding: const EdgeInsets.all(14),
-          child: ConstrainedBox(
-            constraints: BoxConstraints(
-              maxWidth: 560,
-              maxHeight: size.height - 28,
-            ),
-            child: DecoratedBox(
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(28),
-                color: palette.surface,
-                border: Border.all(
-                  color: CupertinoColors.white.withValues(
-                    alpha: palette.brightness == Brightness.dark ? 0.12 : 0.50,
-                  ),
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: palette.shadow.withValues(alpha: 0.55),
-                    blurRadius: 34,
-                    offset: const Offset(0, 18),
-                  ),
-                ],
-              ),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(28),
-                child: SingleChildScrollView(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      SizedBox(
-                        height: compact ? 208 : 232,
-                        child: Stack(
-                          fit: StackFit.expand,
-                          children: [
-                            _MoviePreviewBackdrop(movie: movie),
-                            DecoratedBox(
-                              decoration: BoxDecoration(
-                                gradient: LinearGradient(
-                                  begin: Alignment.topCenter,
-                                  end: Alignment.bottomCenter,
-                                  colors: [
-                                    CupertinoColors.black.withValues(
-                                      alpha: 0.10,
-                                    ),
-                                    CupertinoColors.black.withValues(
-                                      alpha: 0.30,
-                                    ),
-                                    CupertinoColors.black.withValues(
-                                      alpha: 0.76,
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                            Positioned(
-                              top: 12,
-                              right: 12,
-                              child: _PreviewIconButton(
-                                icon: CupertinoIcons.xmark,
-                                onPressed: onClose,
-                              ),
-                            ),
-                            Positioned(
-                              left: 18,
-                              right: 18,
-                              bottom: 16,
-                              child: Row(
-                                crossAxisAlignment: CrossAxisAlignment.end,
-                                children: [
-                                  SizedBox(
-                                    width: posterWidth,
-                                    height: posterHeight,
-                                    child: _MoviePreviewPoster(movie: movie),
-                                  ),
-                                  const SizedBox(width: 14),
-                                  Expanded(
-                                    child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        Text(
-                                          movie.title.replaceAll('\n', ' '),
-                                          maxLines: compact ? 2 : 3,
-                                          overflow: TextOverflow.ellipsis,
-                                          style: TextStyle(
-                                            fontFamily: 'Inter',
-                                            fontSize: compact ? 24 : 30,
-                                            height: 1.02,
-                                            fontWeight: FontWeight.w900,
-                                            color: CupertinoColors.white,
-                                          ),
-                                        ),
-                                        const SizedBox(height: 10),
-                                        Wrap(
-                                          spacing: 7,
-                                          runSpacing: 7,
-                                          children: [
-                                            _PreviewMetaPill(
-                                              label: movie.year.toString(),
-                                            ),
-                                            _PreviewMetaPill(
-                                              label:
-                                                  '${movie.rating.toStringAsFixed(1)} ★',
-                                            ),
-                                            _PreviewMetaPill(
-                                              label: userRatingLabel,
-                                            ),
-                                          ],
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      Padding(
-                        padding: const EdgeInsets.fromLTRB(18, 18, 18, 16),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Text(
-                              movie.synopsis,
-                              style: TextStyle(
-                                fontFamily: 'Inter',
-                                fontSize: 14,
-                                height: 1.45,
-                                fontWeight: FontWeight.w600,
-                                color: palette.textPrimary,
-                              ),
-                            ),
-                            if (movie.genres.isNotEmpty) ...[
-                              const SizedBox(height: 16),
-                              Wrap(
-                                spacing: 8,
-                                runSpacing: 8,
-                                children: movie.genres
-                                    .map(_PreviewGenreChip.new)
-                                    .toList(),
-                              ),
-                            ],
-                            const SizedBox(height: 18),
-                            Row(
-                              children: [
-                                if (canOpenTrailer) ...[
-                                  Expanded(
-                                    flex: 2,
-                                    child: _PreviewActionButton(
-                                      key: ValueKey(
-                                        'movie-preview-trailer-${movie.title}',
-                                      ),
-                                      label: 'Watch Trailer',
-                                      icon: CupertinoIcons.play_fill,
-                                      prominent: true,
-                                      onPressed: onOpenTrailer,
-                                    ),
-                                  ),
-                                  const SizedBox(width: 10),
-                                ],
-                                Expanded(
-                                  child: _PreviewActionButton(
-                                    key: ValueKey(
-                                      'movie-preview-rate-${movie.title}',
-                                    ),
-                                    label: 'Rate',
-                                    icon: CupertinoIcons.star_fill,
-                                    onPressed: onRate,
-                                  ),
-                                ),
-                                if (onToggleWatchlist != null) ...[
-                                  const SizedBox(width: 10),
-                                  Expanded(
-                                    child: _PreviewActionButton(
-                                      key: ValueKey(
-                                        'movie-preview-watchlist-${movie.title}',
-                                      ),
-                                      label: inWatchlist ? 'Liked' : 'Like',
-                                      icon: inWatchlist
-                                          ? CupertinoIcons.heart_fill
-                                          : CupertinoIcons.heart,
-                                      onPressed: onToggleWatchlist!,
-                                    ),
-                                  ),
-                                ],
-                              ],
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _MoviePreviewBackdrop extends StatelessWidget {
-  const _MoviePreviewBackdrop({required this.movie});
-
-  final MovieView movie;
-
-  @override
-  Widget build(BuildContext context) {
-    final posterUrl = movie.posterUrl;
-    final fallback = DecoratedBox(
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: movie.palette,
-        ),
-      ),
-    );
-
-    return Stack(
-      fit: StackFit.expand,
-      children: [
-        fallback,
-        if (posterUrl != null)
-          ImageFiltered(
-            imageFilter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
-            child: Transform.scale(
-              scale: 1.16,
-              child: Image.network(
-                posterUrl,
-                fit: BoxFit.cover,
-                errorBuilder: (_, _, _) => const SizedBox.shrink(),
-              ),
-            ),
-          ),
-      ],
-    );
-  }
-}
-
-class _MoviePreviewPoster extends StatelessWidget {
-  const _MoviePreviewPoster({required this.movie});
-
-  final MovieView movie;
-
-  @override
-  Widget build(BuildContext context) {
-    final posterUrl = movie.posterUrl;
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: CupertinoColors.white.withValues(alpha: 0.34),
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: CupertinoColors.black.withValues(alpha: 0.32),
-            blurRadius: 18,
-            offset: const Offset(0, 10),
-          ),
-        ],
-      ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(16),
-        child: posterUrl == null
-            ? _MovieFallbackPoster(movie: movie)
-            : Image.network(
-                posterUrl,
-                fit: BoxFit.cover,
-                errorBuilder: (_, _, _) => _MovieFallbackPoster(movie: movie),
-              ),
-      ),
-    );
-  }
-}
-
-class _MovieFallbackPoster extends StatelessWidget {
-  const _MovieFallbackPoster({required this.movie});
-
-  final MovieView movie;
-
-  @override
-  Widget build(BuildContext context) {
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: movie.palette,
-        ),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(10),
-        child: Align(
-          alignment: Alignment.topLeft,
-          child: Text(
-            movie.title.replaceAll('\n', ' '),
-            maxLines: 4,
-            overflow: TextOverflow.ellipsis,
-            style: const TextStyle(
-              fontFamily: 'Inter',
-              fontSize: 14,
-              height: 1,
-              fontWeight: FontWeight.w900,
-              color: CupertinoColors.white,
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _PreviewMetaPill extends StatelessWidget {
-  const _PreviewMetaPill({required this.label});
-
-  final String label;
-
-  @override
-  Widget build(BuildContext context) {
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(999),
-        color: CupertinoColors.black.withValues(alpha: 0.36),
-        border: Border.all(
-          color: CupertinoColors.white.withValues(alpha: 0.18),
-        ),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
-        child: Text(
-          label,
-          style: const TextStyle(
-            fontFamily: 'Inter',
-            fontSize: 11,
-            fontWeight: FontWeight.w800,
-            color: CupertinoColors.white,
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _PreviewGenreChip extends StatelessWidget {
-  const _PreviewGenreChip(this.label);
-
-  final String label;
-
-  @override
-  Widget build(BuildContext context) {
-    final palette = context.cineratePalette;
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(999),
-        color: palette.surfaceAlt,
-        border: Border.all(color: palette.tagBackground),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-        child: Text(
-          label,
-          style: TextStyle(
-            fontFamily: 'Inter',
-            fontSize: 11,
-            fontWeight: FontWeight.w800,
-            color: palette.textSecondary,
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _PreviewActionButton extends StatelessWidget {
-  const _PreviewActionButton({
-    super.key,
-    required this.label,
-    required this.icon,
-    required this.onPressed,
-    this.prominent = false,
-  });
-
-  final String label;
-  final IconData icon;
-  final VoidCallback onPressed;
-  final bool prominent;
-
-  @override
-  Widget build(BuildContext context) {
-    final palette = context.cineratePalette;
-    final background = prominent ? palette.primary : palette.surfaceAlt;
-    final foreground = prominent ? CupertinoColors.white : palette.textPrimary;
-    return CupertinoButton(
-      padding: EdgeInsets.zero,
-      minimumSize: const Size(44, 44),
-      borderRadius: BorderRadius.circular(18),
-      onPressed: onPressed,
-      child: DecoratedBox(
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(18),
-          color: background,
-          border: Border.all(
-            color: prominent
-                ? CupertinoColors.white.withValues(alpha: 0.16)
-                : palette.tagBackground,
-          ),
-        ),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(icon, size: 17, color: foreground),
-              const SizedBox(width: 7),
-              Flexible(
-                child: Text(
-                  label,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    fontFamily: 'Inter',
-                    fontSize: 13,
-                    fontWeight: FontWeight.w800,
-                    color: foreground,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _PreviewIconButton extends StatelessWidget {
-  const _PreviewIconButton({required this.icon, required this.onPressed});
-
-  final IconData icon;
-  final VoidCallback onPressed;
-
-  @override
-  Widget build(BuildContext context) {
-    return CupertinoButton(
-      padding: EdgeInsets.zero,
-      minimumSize: const Size(36, 36),
-      borderRadius: BorderRadius.circular(18),
-      onPressed: onPressed,
-      child: DecoratedBox(
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          color: CupertinoColors.black.withValues(alpha: 0.36),
-          border: Border.all(
-            color: CupertinoColors.white.withValues(alpha: 0.20),
-          ),
-        ),
-        child: SizedBox(
-          width: 36,
-          height: 36,
-          child: Icon(icon, size: 15, color: CupertinoColors.white),
-        ),
-      ),
-    );
-  }
 }

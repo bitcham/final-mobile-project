@@ -128,8 +128,15 @@ class _FakeAuthRepository implements AuthRepository {
   Future<AppUser> updateProfile({
     required AppUser user,
     String? realName,
+    String? profileImagePath,
+    String? profileBannerImagePath,
     String? bio,
-  }) async => user.copyWith(realName: realName, bio: bio);
+  }) async => user.copyWith(
+    realName: realName,
+    profileImagePath: profileImagePath,
+    profileBannerImagePath: profileBannerImagePath,
+    bio: bio,
+  );
 }
 
 class _FakeSessionService implements SessionService {

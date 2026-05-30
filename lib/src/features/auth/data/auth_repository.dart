@@ -76,9 +76,16 @@ class AuthRepository {
   Future<AppUser> updateProfile({
     required AppUser user,
     String? realName,
+    String? profileImagePath,
+    String? profileBannerImagePath,
     String? bio,
   }) async {
-    final updated = user.copyWith(realName: realName?.trim(), bio: bio?.trim());
+    final updated = user.copyWith(
+      realName: realName?.trim(),
+      profileImagePath: profileImagePath,
+      profileBannerImagePath: profileBannerImagePath,
+      bio: bio?.trim(),
+    );
     await _databaseService.updateUser(updated);
     return updated;
   }

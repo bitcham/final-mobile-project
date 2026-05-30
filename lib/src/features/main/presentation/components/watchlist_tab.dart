@@ -9,6 +9,7 @@ class _WatchlistTab extends StatelessWidget {
     required this.onOpenTrailer,
     required this.onRateMovie,
     required this.onToggleWatchlist,
+    required this.resolveMovieDetails,
   });
 
   final List<MovieView> movies;
@@ -18,6 +19,7 @@ class _WatchlistTab extends StatelessWidget {
   final Future<void> Function(MovieView movie) onOpenTrailer;
   final void Function(MovieView movie, double rating) onRateMovie;
   final void Function(MovieView movie) onToggleWatchlist;
+  final Future<MovieView> Function(MovieView movie) resolveMovieDetails;
 
   double? _userRatingFor(MovieView movie) => userRatings[movie.title];
 
@@ -118,6 +120,7 @@ class _WatchlistTab extends StatelessWidget {
                         onOpenTrailer: onOpenTrailer,
                         onRateMovie: onRateMovie,
                         onToggleWatchlist: onToggleWatchlist,
+                        resolveMovieDetails: resolveMovieDetails,
                       );
                     }, childCount: movies.length),
                     gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
@@ -144,6 +147,7 @@ class _WatchlistMovieCard extends StatelessWidget {
     required this.onOpenTrailer,
     required this.onRateMovie,
     required this.onToggleWatchlist,
+    required this.resolveMovieDetails,
   });
 
   final MovieView movie;
@@ -152,6 +156,7 @@ class _WatchlistMovieCard extends StatelessWidget {
   final Future<void> Function(MovieView movie) onOpenTrailer;
   final void Function(MovieView movie, double rating) onRateMovie;
   final void Function(MovieView movie) onToggleWatchlist;
+  final Future<MovieView> Function(MovieView movie) resolveMovieDetails;
 
   @override
   Widget build(BuildContext context) {
@@ -173,6 +178,7 @@ class _WatchlistMovieCard extends StatelessWidget {
                   onOpenTrailer: onOpenTrailer,
                   onRateMovie: onRateMovie,
                   onToggleWatchlist: onToggleWatchlist,
+                  resolveMovieDetails: resolveMovieDetails,
                 ),
               ),
               Positioned(

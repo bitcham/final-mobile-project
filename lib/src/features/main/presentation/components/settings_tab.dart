@@ -6,7 +6,6 @@ class _SettingsTab extends StatefulWidget {
     required this.watchlistMovies,
     required this.ratingHistory,
     this.onLogout,
-    required this.onUpdateProfile,
     required this.onChangePassword,
     required this.darkMode,
     required this.onDarkModeChanged,
@@ -16,7 +15,6 @@ class _SettingsTab extends StatefulWidget {
   final List<MovieView> watchlistMovies;
   final List<_RatingHistoryEntry> ratingHistory;
   final VoidCallback? onLogout;
-  final ProfileUpdateCallback onUpdateProfile;
   final PasswordChangeCallback onChangePassword;
   final bool darkMode;
   final ValueChanged<bool> onDarkModeChanged;
@@ -42,19 +40,16 @@ class _SettingsTabState extends State<_SettingsTab> {
                 user: widget.user,
                 bio: _bio,
                 compact: compact,
-                onEditBio: () => _showEditBioDialog(context),
               ),
               SizedBox(height: compact ? 12 : 22),
-              _SettingsRow(
-                label: 'Edit profile',
-                compact: compact,
-                onPressed: () => _showEditProfileDialog(context),
-              ),
+              const _SettingsSectionTitle('Account'),
               _SettingsRow(
                 label: 'Change password',
                 compact: compact,
                 onPressed: () => _showChangePasswordDialog(context),
               ),
+              SizedBox(height: compact ? 6 : 14),
+              const _SettingsSectionTitle('Library'),
               _SettingsRow(
                 label: 'My watchlist',
                 compact: compact,
@@ -62,17 +57,26 @@ class _SettingsTabState extends State<_SettingsTab> {
                     _showWatchlistDialog(context, widget.watchlistMovies),
               ),
               _SettingsRow(
-                label: 'History',
+                label: 'Rating history',
                 compact: compact,
                 onPressed: () =>
                     _showRatingHistoryDialog(context, widget.ratingHistory),
               ),
+              SizedBox(height: compact ? 6 : 14),
+              const _SettingsSectionTitle('App preferences'),
               _SettingsSwitchRow(
                 label: 'Dark mode',
                 value: widget.darkMode,
                 compact: compact,
                 onChanged: widget.onDarkModeChanged,
               ),
+              _SettingsRow(
+                label: 'Movie data source',
+                compact: compact,
+                icon: CupertinoIcons.info_circle,
+                onPressed: () => _showMovieDataDialog(context),
+              ),
+              SizedBox(height: compact ? 6 : 14),
               if (widget.onLogout != null)
                 _SettingsRow(
                   label: 'Log out',
@@ -88,113 +92,13 @@ class _SettingsTabState extends State<_SettingsTab> {
     );
   }
 
-  Future<void> _showEditProfileDialog(BuildContext context) async {
-    final controller = TextEditingController(text: widget.user.realName);
-    String? errorText;
-    await showCupertinoDialog<void>(
-      context: context,
-      useRootNavigator: false,
-      builder: (dialogContext) => StatefulBuilder(
-        builder: (context, setDialogState) => CupertinoAlertDialog(
-          title: const Text('Edit profile'),
-          content: Padding(
-            padding: const EdgeInsets.only(top: 14),
-            child: Column(
-              children: [
-                CupertinoTextField(
-                  controller: controller,
-                  placeholder: 'Real name',
-                  autofocus: true,
-                ),
-                if (errorText != null) ...[
-                  const SizedBox(height: 8),
-                  Text(
-                    errorText!,
-                    style: const TextStyle(color: CupertinoColors.systemRed),
-                  ),
-                ],
-              ],
-            ),
-          ),
-          actions: [
-            CupertinoDialogAction(
-              onPressed: () => Navigator.of(dialogContext).pop(),
-              child: const Text('Cancel'),
-            ),
-            CupertinoDialogAction(
-              onPressed: () async {
-                final name = controller.text.trim();
-                if (name.isEmpty) {
-                  setDialogState(() => errorText = 'Name is required');
-                  return;
-                }
-                await widget.onUpdateProfile(realName: name);
-                if (dialogContext.mounted) {
-                  Navigator.of(dialogContext).pop();
-                }
-              },
-              child: const Text('Save'),
-            ),
-          ],
-        ),
-      ),
+  Future<void> _showMovieDataDialog(BuildContext context) {
+    return showInfoDialog(
+      context,
+      title: 'Movie data source',
+      message:
+          'Cinerate uses TMDB for posters, trailers, cast, reviews, and streaming availability. Saved ratings and watchlist items stay in your local library.',
     );
-    controller.dispose();
-  }
-
-  Future<void> _showEditBioDialog(BuildContext context) async {
-    final controller = TextEditingController(text: _bio);
-    String? errorText;
-    await showCupertinoDialog<void>(
-      context: context,
-      useRootNavigator: false,
-      builder: (dialogContext) => StatefulBuilder(
-        builder: (context, setDialogState) => CupertinoAlertDialog(
-          title: const Text('Edit bio'),
-          content: Padding(
-            padding: const EdgeInsets.only(top: 14),
-            child: Column(
-              children: [
-                CupertinoTextField(
-                  controller: controller,
-                  placeholder: 'Bio',
-                  autofocus: true,
-                  maxLines: 3,
-                ),
-                if (errorText != null) ...[
-                  const SizedBox(height: 8),
-                  Text(
-                    errorText!,
-                    style: const TextStyle(color: CupertinoColors.systemRed),
-                  ),
-                ],
-              ],
-            ),
-          ),
-          actions: [
-            CupertinoDialogAction(
-              onPressed: () => Navigator.of(dialogContext).pop(),
-              child: const Text('Cancel'),
-            ),
-            CupertinoDialogAction(
-              onPressed: () async {
-                final bio = controller.text.trim();
-                if (bio.isEmpty) {
-                  setDialogState(() => errorText = 'Bio is required');
-                  return;
-                }
-                await widget.onUpdateProfile(bio: bio);
-                if (dialogContext.mounted) {
-                  Navigator.of(dialogContext).pop();
-                }
-              },
-              child: const Text('Save'),
-            ),
-          ],
-        ),
-      ),
-    );
-    controller.dispose();
   }
 
   Future<void> _showChangePasswordDialog(BuildContext context) async {

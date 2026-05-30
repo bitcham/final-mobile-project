@@ -190,7 +190,7 @@ class SearchResultTile extends StatelessWidget {
     required this.onRateMovie,
     required this.inWatchlist,
     required this.onToggleWatchlist,
-    required this.resolveTrailer,
+    required this.resolveMovieDetails,
   });
 
   final MovieView movie;
@@ -199,27 +199,20 @@ class SearchResultTile extends StatelessWidget {
   final void Function(MovieView movie, double rating) onRateMovie;
   final bool inWatchlist;
   final void Function(MovieView movie) onToggleWatchlist;
-  final Future<String?> Function(MovieView movie) resolveTrailer;
+  final Future<MovieView> Function(MovieView movie) resolveMovieDetails;
 
-  Future<void> _openDetails(BuildContext context) async {
-    var resolved = movie;
-    if (movie.trailerUrl == null && movie.tmdbId != null) {
-      final url = await resolveTrailer(movie);
-      if (url != null) {
-        resolved = movie.copyWith(trailerUrl: url);
-      }
-    }
-    if (!context.mounted) {
-      return;
-    }
+  void _openDetails(BuildContext context) {
+    final heroTag = 'search-${movie.title}';
     showMovieDetails(
       context,
-      resolved,
+      movie,
       userRating: userRating,
       onOpenTrailer: onOpenTrailer,
       onRateMovie: onRateMovie,
       inWatchlist: inWatchlist,
       onToggleWatchlist: onToggleWatchlist,
+      heroTag: heroTag,
+      resolveMovieDetails: resolveMovieDetails,
     );
   }
 
@@ -244,6 +237,8 @@ class SearchResultTile extends StatelessWidget {
               onRateMovie: onRateMovie,
               inWatchlist: inWatchlist,
               onToggleWatchlist: onToggleWatchlist,
+              heroTag: 'search-${movie.title}',
+              resolveMovieDetails: resolveMovieDetails,
             ),
             const SizedBox(width: 14),
             Expanded(

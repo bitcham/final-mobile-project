@@ -17,10 +17,26 @@ class ProfileImageService {
     if (picked == null) {
       return null;
     }
-    return _copyToProfileImages(File(picked.path));
+    return _copyToProfileImages(File(picked.path), prefix: 'profile');
   }
 
-  Future<String> _copyToProfileImages(File source) async {
+  Future<String?> pickAndStoreProfileBanner(ImageSource source) async {
+    final picked = await _picker.pickImage(
+      source: source,
+      maxWidth: 1600,
+      maxHeight: 900,
+      imageQuality: 86,
+    );
+    if (picked == null) {
+      return null;
+    }
+    return _copyToProfileImages(File(picked.path), prefix: 'banner');
+  }
+
+  Future<String> _copyToProfileImages(
+    File source, {
+    required String prefix,
+  }) async {
     final docs = await getApplicationDocumentsDirectory();
     final folder = Directory(p.join(docs.path, 'profile_images'));
     if (!await folder.exists()) {
@@ -29,7 +45,10 @@ class ProfileImageService {
     final timestamp = DateTime.now().microsecondsSinceEpoch;
     final ext = p.extension(source.path);
     final extension = ext.isEmpty ? '.jpg' : ext;
-    final destinationPath = p.join(folder.path, 'profile_$timestamp$extension');
+    final destinationPath = p.join(
+      folder.path,
+      '${prefix}_$timestamp$extension',
+    );
     final copied = await source.copy(destinationPath);
     return copied.path;
   }

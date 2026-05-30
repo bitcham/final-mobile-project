@@ -38,9 +38,15 @@ class WelcomeScreen extends ConsumerWidget {
     return MainTabScreen(
       user: user,
       onLogout: () => ref.read(authControllerProvider.notifier).logout(),
-      onUpdateProfile: ({realName, bio}) => ref
-          .read(authControllerProvider.notifier)
-          .updateProfile(realName: realName, bio: bio),
+      onUpdateProfile:
+          ({realName, profileImagePath, profileBannerImagePath, bio}) => ref
+              .read(authControllerProvider.notifier)
+              .updateProfile(
+                realName: realName,
+                profileImagePath: profileImagePath,
+                profileBannerImagePath: profileBannerImagePath,
+                bio: bio,
+              ),
       onChangePassword: ({required currentPassword, required newPassword}) =>
           ref
               .read(authControllerProvider.notifier)
@@ -52,7 +58,7 @@ class WelcomeScreen extends ConsumerWidget {
       initialRatedMovies: library.ratedMovies,
       initialWatchlist: library.watchlistMovies,
       onPersistRating: libraryController.rate,
-      onPersistWatchlistToggle: libraryController.toggleWatchlist,
+      onPersistWatchlistToggle: libraryController.setWatchlist,
     );
   }
 }

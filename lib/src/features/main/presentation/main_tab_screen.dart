@@ -1,8 +1,10 @@
+import 'dart:io';
 import 'dart:math' as math;
 import 'dart:ui' as ui;
 
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:image_picker/image_picker.dart';
 
 import 'package:movie_rating/src/core/models/movie_view.dart';
 import 'package:movie_rating/src/core/theme/app_theme.dart';
@@ -10,6 +12,7 @@ import 'package:movie_rating/src/core/widgets/cinerate_logo.dart';
 import 'package:movie_rating/src/core/widgets/movie_dialogs.dart';
 import 'package:movie_rating/src/core/widgets/movie_widgets.dart';
 import 'package:movie_rating/src/core/widgets/profile_avatar.dart';
+import 'package:movie_rating/src/features/auth/data/auth_providers.dart';
 import 'package:movie_rating/src/features/auth/models/app_user.dart';
 import 'package:movie_rating/src/features/search/data/search_providers.dart';
 import 'package:movie_rating/src/features/search/presentation/search_screen.dart';
@@ -21,12 +24,18 @@ part 'components/main_tab_data.dart';
 part 'components/home_tab.dart';
 part 'components/settings_tab.dart';
 part 'components/settings_widgets.dart';
+part 'components/profile_screen.dart';
 part 'components/main_tab_dialogs.dart';
 part 'components/watchlist_tab.dart';
 part 'components/bottom_nav.dart';
 
 typedef ProfileUpdateCallback =
-    Future<AppUser> Function({String? realName, String? bio});
+    Future<AppUser> Function({
+      String? realName,
+      String? profileImagePath,
+      String? profileBannerImagePath,
+      String? bio,
+    });
 typedef PasswordChangeCallback =
     Future<bool> Function({
       required String currentPassword,
@@ -58,7 +67,8 @@ class MainTabScreen extends ConsumerStatefulWidget {
   final List<MovieView> initialRatedMovies;
   final List<MovieView> initialWatchlist;
   final Future<void> Function(MovieView movie, double rating)? onPersistRating;
-  final Future<void> Function(MovieView movie)? onPersistWatchlistToggle;
+  final Future<void> Function(MovieView movie, bool isInWatchlist)?
+  onPersistWatchlistToggle;
 
   @override
   ConsumerState<MainTabScreen> createState() => _MainTabScreenState();
@@ -73,6 +83,7 @@ class _MainTabScreenState extends ConsumerState<MainTabScreen> {
   late List<MovieView> _watchlistMovies;
   late List<_RatingHistoryEntry> _ratingHistory;
   final Map<int, String?> _trailerCache = {};
+  final Map<int, MovieView> _movieDetailsCache = {};
 
   @override
   void initState() {
@@ -91,6 +102,30 @@ class _MainTabScreenState extends ConsumerState<MainTabScreen> {
   void _setDarkMode(bool value) {
     setState(() => _darkMode = value);
     ref.read(settingsServiceProvider).saveDarkMode(value);
+  }
+
+  CupertinoThemeData _themeDataFor(CineratePalette palette) {
+    return CupertinoThemeData(
+      brightness: palette.brightness,
+      primaryColor: palette.primary,
+      primaryContrastingColor: CupertinoColors.white,
+      scaffoldBackgroundColor: palette.background,
+      barBackgroundColor: palette.background,
+      textTheme: CupertinoTextThemeData(
+        primaryColor: palette.primary,
+        textStyle: TextStyle(
+          fontFamily: 'Inter',
+          fontSize: 14,
+          color: palette.textPrimary,
+        ),
+        actionTextStyle: TextStyle(
+          fontFamily: 'Inter',
+          fontSize: 14,
+          fontWeight: FontWeight.bold,
+          color: palette.primary,
+        ),
+      ),
+    );
   }
 
   void _seedLibrary() {
@@ -117,17 +152,66 @@ class _MainTabScreenState extends ConsumerState<MainTabScreen> {
     }
   }
 
-  Future<AppUser> _updateProfile({String? realName, String? bio}) async {
+  Future<AppUser> _updateProfile({
+    String? realName,
+    String? profileImagePath,
+    String? profileBannerImagePath,
+    String? bio,
+  }) async {
     final updater = widget.onUpdateProfile;
     final trimmedName = realName?.trim();
     final trimmedBio = bio?.trim();
     final updated = updater == null
-        ? _user.copyWith(realName: trimmedName, bio: trimmedBio)
-        : await updater(realName: trimmedName, bio: trimmedBio);
+        ? _user.copyWith(
+            realName: trimmedName,
+            profileImagePath: profileImagePath,
+            profileBannerImagePath: profileBannerImagePath,
+            bio: trimmedBio,
+          )
+        : await updater(
+            realName: trimmedName,
+            profileImagePath: profileImagePath,
+            profileBannerImagePath: profileBannerImagePath,
+            bio: trimmedBio,
+          );
     if (mounted) {
       setState(() => _user = updated);
     }
     return updated;
+  }
+
+  Future<String?> _pickProfileBanner(ImageSource source) {
+    return ref
+        .read(profileImageServiceProvider)
+        .pickAndStoreProfileBanner(source);
+  }
+
+  Future<String?> _pickProfileImage(ImageSource source) {
+    return ref
+        .read(profileImageServiceProvider)
+        .pickAndStoreProfileImage(source);
+  }
+
+  Future<void> _openProfileScreen() {
+    final palette = _darkMode ? CineratePalette.dark : CineratePalette.light;
+    return Navigator.of(context).push<void>(
+      CupertinoPageRoute(
+        builder: (_) => CinerateThemeScope(
+          palette: palette,
+          child: CupertinoTheme(
+            data: _themeDataFor(palette),
+            child: _ProfileScreen(
+              user: _user,
+              watchlistMovies: _watchlistMovies,
+              ratingHistory: _ratingHistory,
+              onUpdateProfile: _updateProfile,
+              onPickProfileImage: _pickProfileImage,
+              onPickProfileBanner: _pickProfileBanner,
+            ),
+          ),
+        ),
+      ),
+    );
   }
 
   Future<bool> _changePassword({
@@ -185,6 +269,22 @@ class _MainTabScreenState extends ConsumerState<MainTabScreen> {
     }
   }
 
+  Future<MovieView> _resolveMovieDetails(MovieView movie) async {
+    final tmdbId = movie.tmdbId;
+    if (tmdbId == null) {
+      return movie;
+    }
+    final cached = _movieDetailsCache[tmdbId];
+    if (cached != null) {
+      return cached;
+    }
+    final details = await ref
+        .read(tmdbApiClientProvider)
+        .fetchMovieDetails(movie);
+    _movieDetailsCache[tmdbId] = details;
+    return details;
+  }
+
   void _rateMovie(MovieView movie, double rating) {
     final normalizedRating = normalizeRating(rating);
     setState(() {
@@ -199,15 +299,18 @@ class _MainTabScreenState extends ConsumerState<MainTabScreen> {
   }
 
   void _toggleWatchlist(MovieView movie) {
+    late final bool isInWatchlist;
     setState(() {
       if (_watchlistMovieTitles.add(movie.title)) {
         _watchlistMovies.insert(0, movie);
+        isInWatchlist = true;
       } else {
         _watchlistMovieTitles.remove(movie.title);
         _watchlistMovies.removeWhere((m) => m.title == movie.title);
+        isInWatchlist = false;
       }
     });
-    widget.onPersistWatchlistToggle?.call(movie);
+    widget.onPersistWatchlistToggle?.call(movie, isInWatchlist);
   }
 
   @override
@@ -230,27 +333,7 @@ class _MainTabScreenState extends ConsumerState<MainTabScreen> {
     return CinerateThemeScope(
       palette: palette,
       child: CupertinoTheme(
-        data: CupertinoThemeData(
-          brightness: palette.brightness,
-          primaryColor: palette.primary,
-          primaryContrastingColor: CupertinoColors.white,
-          scaffoldBackgroundColor: palette.background,
-          barBackgroundColor: palette.background,
-          textTheme: CupertinoTextThemeData(
-            primaryColor: palette.primary,
-            textStyle: TextStyle(
-              fontFamily: 'Inter',
-              fontSize: 14,
-              color: palette.textPrimary,
-            ),
-            actionTextStyle: TextStyle(
-              fontFamily: 'Inter',
-              fontSize: 14,
-              fontWeight: FontWeight.bold,
-              color: palette.primary,
-            ),
-          ),
-        ),
+        data: _themeDataFor(palette),
         child: CupertinoPageScaffold(
           backgroundColor: palette.background,
           child: LayoutBuilder(
@@ -289,18 +372,14 @@ class _MainTabScreenState extends ConsumerState<MainTabScreen> {
                                       homeMoviesAsync.isLoading,
                                   userRatings: _userMovieRatings,
                                   watchlistMovieTitles: _watchlistMovieTitles,
-                                  onOpenSearch: () =>
-                                      setState(() => _tab = _MainTab.search),
-                                  onOpenSettings: () =>
-                                      setState(() => _tab = _MainTab.settings),
-                                  onOpenWatchlist: () =>
-                                      setState(() => _tab = _MainTab.watchlist),
+                                  onOpenProfile: _openProfileScreen,
                                   onRefreshMovies: () => ref.invalidate(
                                     _homeMovieCollectionsProvider,
                                   ),
                                   onOpenTrailer: _openTrailer,
                                   onRateMovie: _rateMovie,
                                   onToggleWatchlist: _toggleWatchlist,
+                                  resolveMovieDetails: _resolveMovieDetails,
                                 ),
                                 SearchScreen(
                                   userRatings: _userMovieRatings,
@@ -318,13 +397,13 @@ class _MainTabScreenState extends ConsumerState<MainTabScreen> {
                                   onOpenTrailer: _openTrailer,
                                   onRateMovie: _rateMovie,
                                   onToggleWatchlist: _toggleWatchlist,
+                                  resolveMovieDetails: _resolveMovieDetails,
                                 ),
                                 _SettingsTab(
                                   user: _user,
                                   watchlistMovies: _watchlistMovies,
                                   ratingHistory: _ratingHistory,
                                   onLogout: widget.onLogout,
-                                  onUpdateProfile: _updateProfile,
                                   onChangePassword: _changePassword,
                                   darkMode: _darkMode,
                                   onDarkModeChanged: _setDarkMode,

@@ -50,11 +50,23 @@ class MovieLibraryRepository {
     required MovieView movie,
     required bool isInWatchlist,
   }) async {
-    if (isInWatchlist) {
-      await _databaseService.removeFromWatchlist(userId, movie.title);
-      return false;
+    return setWatchlist(
+      userId: userId,
+      movie: movie,
+      shouldBeInWatchlist: !isInWatchlist,
+    );
+  }
+
+  Future<bool> setWatchlist({
+    required int userId,
+    required MovieView movie,
+    required bool shouldBeInWatchlist,
+  }) async {
+    if (shouldBeInWatchlist) {
+      await _databaseService.addToWatchlist(userId, movie);
+      return true;
     }
-    await _databaseService.addToWatchlist(userId, movie);
-    return true;
+    await _databaseService.removeFromWatchlist(userId, movie.title);
+    return false;
   }
 }

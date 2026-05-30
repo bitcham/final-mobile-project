@@ -52,11 +52,12 @@ void main() {
     await _openTab(tester, 'SETTINGS');
     expect(find.text('Test Viewer'), findsOneWidget);
     expect(find.text('@viewer'), findsOneWidget);
-    expect(find.text('Edit profile'), findsOneWidget);
+    expect(find.text('Profile details'), findsNothing);
     expect(find.text('Change password'), findsOneWidget);
     expect(find.text('My watchlist'), findsOneWidget);
-    expect(find.text('History'), findsOneWidget);
+    expect(find.text('Rating history'), findsOneWidget);
     expect(find.text('Dark mode'), findsOneWidget);
+    expect(find.text('Movie data source'), findsOneWidget);
     expect(find.text('Add a payment method'), findsNothing);
     expect(find.text('Push notifications'), findsNothing);
     expect(find.text('About us'), findsNothing);
@@ -68,6 +69,47 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.text('Log out'));
     await tester.pumpAndSettle();
+  });
+
+  testWidgets('profile avatar opens the profile screen', (tester) async {
+    await _pumpMainTab(tester);
+
+    await tester.tap(find.byKey(const ValueKey('home-profile-avatar')));
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const ValueKey('profile-screen')), findsOneWidget);
+    expect(find.text('Profile'), findsOneWidget);
+    expect(find.text('Test Viewer'), findsOneWidget);
+    expect(find.text('@viewer'), findsOneWidget);
+    expect(find.text('Saved'), findsOneWidget);
+    expect(find.text('Rated'), findsOneWidget);
+    expect(find.text('Average'), findsOneWidget);
+    expect(find.text('Edit profile'), findsOneWidget);
+    expect(find.text('Change banner'), findsOneWidget);
+    expect(find.text('Settings'), findsNothing);
+
+    await tester.tap(find.byKey(const ValueKey('profile-back-button')));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const ValueKey('profile-screen')), findsNothing);
+  });
+
+  testWidgets('quick menu filters home movies by category', (tester) async {
+    await _pumpMainTab(tester);
+
+    await tester.tap(find.byKey(const ValueKey('home-quick-menu')));
+    await tester.pumpAndSettle();
+    expect(find.text('Filter homepage'), findsOneWidget);
+
+    await tester.tap(find.byKey(const ValueKey('home-filter-comedy')));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Showing Comedy'), findsOneWidget);
+    expect(find.text('Comedy Picks'), findsOneWidget);
+    expect(find.text('Iron Man'), findsNothing);
+
+    await tester.tap(find.text('Clear'));
+    await tester.pumpAndSettle();
+    expect(find.text('Showing Comedy'), findsNothing);
   });
 
   testWidgets('wide browser layout keeps navigation and hero actions visible', (
@@ -111,15 +153,13 @@ void main() {
       find.byKey(const ValueKey('movie-preview-Iron Man')),
       findsOneWidget,
     );
-    expect(find.textContaining('Tony Stark escapes captivity'), findsOneWidget);
+    expect(find.text('Iron Man'), findsWidgets);
 
     await tester.tap(
       find.byKey(const ValueKey('movie-preview-watchlist-Iron Man')),
     );
     await tester.pumpAndSettle();
 
-    await tester.tap(find.byKey(const ValueKey('trending-movie-Iron Man')));
-    await tester.pumpAndSettle();
     await tester.tap(find.byKey(const ValueKey('movie-preview-rate-Iron Man')));
     await tester.pumpAndSettle();
     await tester.tap(find.byKey(const ValueKey('rating-preset-4.5')));
@@ -127,13 +167,14 @@ void main() {
     await tester.tap(find.text('Save rating'));
     await tester.pumpAndSettle();
 
-    await tester.tap(find.byKey(const ValueKey('trending-movie-Iron Man')));
-    await tester.pumpAndSettle();
     await tester.tap(
       find.byKey(const ValueKey('movie-preview-trailer-Iron Man')),
     );
     await tester.pumpAndSettle();
     expect(openedTrailerUrls.last, Uri.parse(_ironManTrailerUrl));
+
+    await tester.tap(find.byKey(const ValueKey('movie-detail-back-Iron Man')));
+    await tester.pumpAndSettle();
 
     await _openTab(tester, 'SETTINGS');
     await tester.tap(find.text('My watchlist'));
@@ -142,7 +183,7 @@ void main() {
     await tester.tap(find.text('Close'));
     await tester.pumpAndSettle();
 
-    await tester.tap(find.text('History'));
+    await tester.tap(find.text('Rating history'));
     await tester.pumpAndSettle();
     expect(find.textContaining('Iron Man - 4.5 ★'), findsOneWidget);
     await tester.tap(find.text('Close'));
@@ -153,6 +194,26 @@ void main() {
       find.byKey(const ValueKey('watchlist-movie-Iron Man')),
       findsOneWidget,
     );
+  });
+
+  testWidgets('movie detail preview stays clean on compact screens', (
+    tester,
+  ) async {
+    await _pumpMainTab(tester, viewSize: const Size(393, 667));
+
+    await tester.ensureVisible(
+      find.byKey(const ValueKey('trending-movie-Iron Man')),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('trending-movie-Iron Man')));
+    await tester.pumpAndSettle();
+
+    expect(
+      find.byKey(const ValueKey('movie-preview-Iron Man')),
+      findsOneWidget,
+    );
+    expect(find.text('124 min'), findsOneWidget);
+    expect(tester.takeException(), isNull);
   });
 
   testWidgets('search filters support rating and year ranges', (tester) async {
@@ -211,14 +272,16 @@ void main() {
       const Color(0xFF111113),
     );
 
-    await tester.tap(find.byKey(const ValueKey('edit-bio-button')));
+    await tester.tap(find.text('Movie data source'));
     await tester.pumpAndSettle();
-    expect(find.text('Edit bio'), findsOneWidget);
+    expect(find.text('Movie data source'), findsWidgets);
     expect(
-      CupertinoTheme.brightnessOf(tester.element(find.text('Edit bio'))),
+      CupertinoTheme.brightnessOf(
+        tester.element(find.text('Movie data source').last),
+      ),
       Brightness.light,
     );
-    await tester.tap(find.text('Cancel'));
+    await tester.tap(find.text('OK'));
     await tester.pumpAndSettle();
 
     await _openTab(tester, 'HOME');

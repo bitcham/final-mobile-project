@@ -19,7 +19,7 @@ class AuthDatabaseService {
     final path = await _databasePath();
     _database = await openDatabase(
       path,
-      version: 2,
+      version: 3,
       onCreate: (database, version) async {
         await database.execute('''
           CREATE TABLE $_table (
@@ -29,6 +29,7 @@ class AuthDatabaseService {
             password_salt TEXT NOT NULL,
             real_name TEXT NOT NULL,
             profile_image_path TEXT,
+            profile_banner_image_path TEXT,
             bio TEXT
           )
         ''');
@@ -36,6 +37,11 @@ class AuthDatabaseService {
       onUpgrade: (database, oldVersion, newVersion) async {
         if (oldVersion < 2) {
           await database.execute('ALTER TABLE $_table ADD COLUMN bio TEXT');
+        }
+        if (oldVersion < 3) {
+          await database.execute(
+            'ALTER TABLE $_table ADD COLUMN profile_banner_image_path TEXT',
+          );
         }
       },
     );

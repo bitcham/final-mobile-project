@@ -85,6 +85,7 @@ void main() {
       final updatedProfile = await repository.updateProfile(
         user: user,
         realName: 'Person Two',
+        profileBannerImagePath: '/tmp/banner.jpg',
       );
       final passwordChanged = await repository.changePassword(
         user: updatedProfile,
@@ -93,6 +94,7 @@ void main() {
       );
 
       expect(updatedProfile.realName, 'Person Two');
+      expect(updatedProfile.profileBannerImagePath, '/tmp/banner.jpg');
       expect(passwordChanged, isTrue);
       expect(
         await repository.login(

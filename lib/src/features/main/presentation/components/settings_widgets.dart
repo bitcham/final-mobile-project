@@ -1,16 +1,46 @@
 part of '../main_tab_screen.dart';
 
+String _profileHandleFromEmail(String email) {
+  final localPart = email.split('@').first.trim();
+  final safeHandle = localPart
+      .toLowerCase()
+      .replaceAll(RegExp(r'[^a-z0-9_]+'), '')
+      .replaceAll(RegExp(r'_+'), '_');
+  return '@${safeHandle.isEmpty ? 'cinefan' : safeHandle}';
+}
+
+class _SettingsSectionTitle extends StatelessWidget {
+  const _SettingsSectionTitle(this.label);
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    final palette = context.cineratePalette;
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 6),
+      child: Text(
+        label.toUpperCase(),
+        style: TextStyle(
+          fontFamily: 'Inter',
+          fontSize: 11,
+          fontWeight: FontWeight.w900,
+          color: palette.textSecondary,
+        ),
+      ),
+    );
+  }
+}
+
 class _ProfileSummaryCard extends StatelessWidget {
   const _ProfileSummaryCard({
     required this.user,
     required this.bio,
-    required this.onEditBio,
     this.compact = false,
   });
 
   final AppUser user;
   final String bio;
-  final VoidCallback onEditBio;
   final bool compact;
 
   @override
@@ -90,31 +120,11 @@ class _ProfileSummaryCard extends StatelessWidget {
                   ),
                 ),
               ),
-              CupertinoButton(
-                key: const ValueKey('edit-bio-button'),
-                padding: EdgeInsets.zero,
-                minimumSize: const Size(32, 32),
-                onPressed: onEditBio,
-                child: Icon(
-                  CupertinoIcons.square_pencil,
-                  color: palette.textSecondary,
-                  size: 25,
-                ),
-              ),
             ],
           ),
         ],
       ),
     );
-  }
-
-  String _profileHandleFromEmail(String email) {
-    final localPart = email.split('@').first.trim();
-    final safeHandle = localPart
-        .toLowerCase()
-        .replaceAll(RegExp(r'[^a-z0-9_]+'), '')
-        .replaceAll(RegExp(r'_+'), '_');
-    return '@${safeHandle.isEmpty ? 'cinefan' : safeHandle}';
   }
 }
 

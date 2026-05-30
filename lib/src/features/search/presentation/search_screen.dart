@@ -33,7 +33,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
   final ScrollController _scrollController = ScrollController();
   Timer? _debounce;
   bool _showJumpTop = false;
-  final Map<int, String?> _trailerCache = {};
+  final Map<int, MovieView> _detailsCache = {};
 
   @override
   void initState() {
@@ -145,17 +145,20 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
 
   double? _userRatingFor(MovieView movie) => widget.userRatings[movie.title];
 
-  Future<String?> _resolveTrailer(MovieView movie) async {
+  Future<MovieView> _resolveMovieDetails(MovieView movie) async {
     final id = movie.tmdbId;
     if (id == null) {
-      return null;
+      return movie;
     }
-    if (_trailerCache.containsKey(id)) {
-      return _trailerCache[id];
+    final cached = _detailsCache[id];
+    if (cached != null) {
+      return cached;
     }
-    final url = await ref.read(tmdbApiClientProvider).fetchTrailerUrl(id);
-    _trailerCache[id] = url;
-    return url;
+    final details = await ref
+        .read(tmdbApiClientProvider)
+        .fetchMovieDetails(movie);
+    _detailsCache[id] = details;
+    return details;
   }
 
   @override
@@ -298,7 +301,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
             onOpenTrailer: widget.onOpenTrailer,
             onRateMovie: widget.onRateMovie,
             onToggleWatchlist: widget.onToggleWatchlist,
-            resolveTrailer: _resolveTrailer,
+            resolveMovieDetails: _resolveMovieDetails,
           ),
         ),
       ),

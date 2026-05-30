@@ -48,6 +48,18 @@ class MovieLibraryController extends AsyncNotifier<MovieLibrary> {
     );
     state = AsyncData(await repo.load(userId));
   }
+
+  Future<void> setWatchlist(MovieView movie, bool shouldBeInWatchlist) async {
+    final userId = _userId;
+    if (userId == null) return;
+    final repo = ref.read(movieLibraryRepositoryProvider);
+    await repo.setWatchlist(
+      userId: userId,
+      movie: movie,
+      shouldBeInWatchlist: shouldBeInWatchlist,
+    );
+    state = AsyncData(await repo.load(userId));
+  }
 }
 
 final movieLibraryControllerProvider =
